@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GitHub Snapshot Backup Lite</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img src="snapshot-mark.svg" alt="" width="34" height="34" />
+        <span>GitHub Snapshot Backup Lite</span>
+      </div>
+      <nav aria-label="Page sections">
+        <a href="#browser">Browser Version</a>
+        <a href="#download">Download</a>
+        <a href="#docs">Docs</a>
+      </nav>
+    </header>
+
+    <main>
+      <section id="browser" class="tool-section">
+        <div class="panel main-tool">
+          <div class="section-heading">
+            <h1>Snapshot Planner</h1>
+            <p>Plan a backup run and export a sample manifest. The installed macOS app performs the real `gh` and `git` backup work.</p>
+          </div>
+
+          <div class="grid">
+            <label>
+              GitHub Account
+              <input id="account" value="MichaelBrandonFalk" />
+            </label>
+            <label>
+              Backup Destination
+              <input id="destination" value="Google Drive/My Drive/GitHub Backup" />
+            </label>
+            <label>
+              Weekly Day
+              <select id="weekday">
+                <option>Sunday</option>
+                <option>Monday</option>
+                <option>Tuesday</option>
+                <option>Wednesday</option>
+                <option>Thursday</option>
+                <option>Friday</option>
+                <option>Saturday</option>
+              </select>
+            </label>
+            <label>
+              Time
+              <input id="time" type="time" value="02:00" />
+            </label>
+            <label>
+              Retention
+              <select id="retention">
+                <option value="4">4 backups</option>
+                <option value="1">1 backup</option>
+                <option value="2">2 backups</option>
+                <option value="8">8 backups</option>
+                <option value="12">12 backups</option>
+              </select>
+            </label>
+            <label>
+              Repository List
+              <textarea id="repos" rows="8">MichaelBrandonFalk/MetadataTool
+MichaelBrandonFalk/NameEverythingBetter
+MichaelBrandonFalk/S3-Organizer</textarea>
+            </label>
+          </div>
+
+          <div class="actions">
+            <button id="planButton">Create Snapshot Plan</button>
+            <button id="downloadManifest" class="secondary">Download Manifest</button>
+          </div>
+        </div>
+
+        <aside class="panel status-panel">
+          <h2>Run Preview</h2>
+          <div class="backup-card">
+            <img src="snapshot-drive.svg" alt="" width="96" height="96" />
+            <dl>
+              <div><dt>Repositories</dt><dd id="repoCount">3</dd></div>
+              <div><dt>Schedule</dt><dd id="schedule">Sunday at 02:00</dd></div>
+              <div><dt>Keep</dt><dd id="keep">4 backups</dd></div>
+              <div><dt>Output</dt><dd id="output">3 ZIP files + manifest</dd></div>
+            </dl>
+          </div>
+          <pre id="manifest"></pre>
+        </aside>
+      </section>
+
+      <section id="download" class="content-band">
+        <h2>Download</h2>
+        <p>The macOS app is distributed as a versioned ZIP release. It requires GitHub CLI authentication and writes snapshots to any Finder-accessible folder, including Google Drive for desktop.</p>
+        <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/latest">Latest GitHub Release</a>
+      </section>
+
+      <section id="docs" class="docs-grid">
+        <article>
+          <h2>What It Saves</h2>
+          <p>Each run creates dated ZIP files containing the current files from `main`, or the repository default branch when `main` does not exist. The `.git` directory is removed before archiving.</p>
+        </article>
+        <article>
+          <h2>Setup</h2>
+          <ol>
+            <li>Install `git` and `gh`.</li>
+            <li>Run `gh auth login`.</li>
+            <li>Open the app and choose a backup folder.</li>
+            <li>Leave weekly backup enabled or run backups manually.</li>
+          </ol>
+        </article>
+        <article>
+          <h2>Restore</h2>
+          <p>Extract a repository ZIP, create a new GitHub repository, then initialize and push the extracted folder with standard Git commands.</p>
+        </article>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
+

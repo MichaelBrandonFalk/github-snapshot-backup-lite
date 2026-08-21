@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "github-snapshot-backup-lite"
+version = "1.0.0"
+description = "Small macOS utility for weekly GitHub repository snapshot backups."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "PySide6>=6.7",
+]
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.0"]
+test = ["pytest>=8.0"]
+
+[project.scripts]
+github-snapshot-backup = "github_snapshot_backup.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
