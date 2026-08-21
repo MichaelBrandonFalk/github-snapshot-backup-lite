@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         self.signals = BackupSignals()
         self.cancel_requested = False
         self.setWindowTitle("GitHub Snapshot Backup")
-        self.resize(560, 620)
+        self.resize(640, 760)
         self._build_ui()
         self._connect_signals()
         self.refresh_status()
@@ -76,6 +76,23 @@ class MainWindow(QMainWindow):
         grid.addWidget(QLabel("Automatic Backup"), 4, 0)
         grid.addWidget(self.schedule_label, 4, 1)
         layout.addLayout(grid)
+
+        repo_row = QHBoxLayout()
+        self.scope_combo = QComboBox()
+        self.scope_combo.addItems(["All discovered repositories", "Only repositories listed below"])
+        self.scope_combo.setCurrentIndex(1 if self.config.backup_scope == "selected" else 0)
+        self.fill_repos_button = QPushButton("Fill With Found Repositories")
+        repo_row.addWidget(QLabel("Repository Mode"))
+        repo_row.addWidget(self.scope_combo, 1)
+        repo_row.addWidget(self.fill_repos_button)
+        layout.addLayout(repo_row)
+
+        self.repo_list_edit = QTextEdit()
+        self.repo_list_edit.setPlaceholderText("owner/repository, one per line. Leave mode set to all for set-and-forget backups.")
+        self.repo_list_edit.setFixedHeight(110)
+        self.repo_list_edit.setPlainText("\n".join(self.config.selected_repositories))
+        self.repo_list_edit.setEnabled(self.config.backup_scope == "selected")
+        layout.addWidget(self.repo_list_edit)
 
         buttons = QHBoxLayout()
         self.choose_button = QPushButton("Choose Folder")
@@ -117,7 +134,9 @@ class MainWindow(QMainWindow):
         self.cancel_button = QPushButton("Cancel Backup")
         self.cancel_button.setEnabled(False)
         self.restore_button = QPushButton("Restore Help")
+        self.save_button = QPushButton("Save Settings")
         action_row.addWidget(self.backup_button)
+        action_row.addWidget(self.save_button)
         action_row.addWidget(self.cancel_button)
         action_row.addWidget(self.restore_button)
         layout.addLayout(action_row)
@@ -135,10 +154,14 @@ class MainWindow(QMainWindow):
         self.open_folder_button.clicked.connect(self.open_backup_folder)
         self.log_button.clicked.connect(self.toggle_log)
         self.restore_button.clicked.connect(self.show_restore_help)
+        self.save_button.clicked.connect(self.save_settings)
+        self.fill_repos_button.clicked.connect(self.fill_found_repositories)
         self.auto_check.stateChanged.connect(self.save_settings)
         self.day_combo.currentIndexChanged.connect(self.save_settings)
         self.time_edit.timeChanged.connect(self.save_settings)
         self.retention_spin.valueChanged.connect(self.save_settings)
+        self.scope_combo.currentIndexChanged.connect(self.save_settings)
+        self.repo_list_edit.textChanged.connect(lambda: self.save_settings(update_scheduler=False))
         self.signals.progress.connect(self.on_progress)
         self.signals.finished.connect(self.on_finished)
         self.signals.failed.connect(self.on_failed)
@@ -150,7 +173,11 @@ class MainWindow(QMainWindow):
             user = github_username()
             repos = list_repositories(user)
             self.github_label.setText(f"Logged in as {user}")
-            self.repo_label.setText(f"{len(repos)} found")
+            if self.config.backup_scope == "selected":
+                selected = len(self.config.selected_repositories)
+                self.repo_label.setText(f"{len(repos)} found; {selected} selected")
+            else:
+                self.repo_label.setText(f"{len(repos)} found; backing up all")
         except Exception as exc:
             self.github_label.setText(str(exc))
             self.repo_label.setText("Unavailable")
@@ -162,19 +189,42 @@ class MainWindow(QMainWindow):
             self.destination_label.setText(folder)
             self.save_settings()
 
-    def save_settings(self) -> None:
+    def save_settings(self, update_scheduler: bool = True) -> None:
         self.config.automatic_backup = self.auto_check.isChecked()
         self.config.weekday = self.day_combo.currentIndex()
         time = self.time_edit.time()
         self.config.hour = time.hour()
         self.config.minute = time.minute()
         self.config.retention = self.retention_spin.value()
+        self.config.backup_scope = "selected" if self.scope_combo.currentIndex() == 1 else "all"
+        self.config.selected_repositories = self._repo_lines()
         self.config.save()
+        self.repo_list_edit.setEnabled(self.config.backup_scope == "selected")
         self.schedule_label.setText(next_due_description(self.config))
+        if not update_scheduler:
+            return
         if self.config.automatic_backup:
             install_launch_agent(self.config)
         else:
             uninstall_launch_agent()
+        self.refresh_status()
+
+    def _repo_lines(self) -> list[str]:
+        return [
+            line.strip()
+            for line in self.repo_list_edit.toPlainText().splitlines()
+            if line.strip()
+        ]
+
+    def fill_found_repositories(self) -> None:
+        try:
+            user = github_username()
+            repos = list_repositories(user)
+            self.repo_list_edit.setPlainText("\n".join(repo.name_with_owner for repo in repos))
+            self.scope_combo.setCurrentIndex(1)
+            self.save_settings()
+        except Exception as exc:
+            QMessageBox.warning(self, "Repository List", str(exc))
 
     def start_backup(self) -> None:
         self.save_settings()
@@ -244,4 +294,3 @@ def run_gui() -> int:
     window = MainWindow()
     window.show()
     return app.exec()
-

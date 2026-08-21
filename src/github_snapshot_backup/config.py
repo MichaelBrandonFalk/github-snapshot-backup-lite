@@ -34,6 +34,8 @@ class AppConfig:
     minute: int = 0
     retention: int = 4
     auto_run_missed_backup: bool = True
+    backup_scope: str = "all"
+    selected_repositories: list[str] = field(default_factory=list)
     excluded_repositories: list[str] = field(default_factory=list)
     last_successful_backup: str = ""
 
@@ -53,4 +55,3 @@ class AppConfig:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
-

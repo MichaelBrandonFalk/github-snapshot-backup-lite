@@ -4,6 +4,8 @@ GitHub Snapshot Backup Lite is a small macOS utility that keeps weekly point-in-
 
 It is intentionally not a full GitHub archive. It backs up the current files from `main`, or the repository default branch when `main` does not exist. It does not preserve issues, pull requests, Actions history, every branch, tags, or full Git history.
 
+The public website is for instructions and downloads. Real backups require the installed macOS app because the app must call `gh`, call `git`, read/write local folders, and install a LaunchAgent for weekly set-and-forget scheduling.
+
 ## Requirements
 
 - macOS
@@ -22,6 +24,8 @@ gh auth login
 ## What Gets Backed Up
 
 - Public, private, archived, and forked repositories owned by the logged-in user
+- All discovered repositories by default
+- Optional selected-repository mode using `owner/repository` names, one per line
 - The `main` branch when it exists
 - Otherwise the GitHub default branch
 - Submodules when clone access allows it
@@ -52,6 +56,17 @@ Run the saved configuration without opening the GUI:
 ```bash
 github-snapshot-backup --headless-backup
 ```
+
+## Set-And-Forget Use
+
+1. Open the macOS app.
+2. Sign in to GitHub CLI if prompted.
+3. Choose a backup destination such as a Google Drive for desktop folder.
+4. Leave Repository Mode set to `All discovered repositories`.
+5. Leave Weekly enabled and choose the day/time.
+6. Close the app. The LaunchAgent keeps running scheduled headless backups.
+
+Open the app again later to change the folder, schedule, retention count, or switch to a selected repository list.
 
 ## Build The macOS App
 
@@ -100,4 +115,3 @@ git push -u origin main
 ## Versioning
 
 Each released edit should update `src/github_snapshot_backup/__init__.py`, rebuild the app ZIP, tag the commit, and publish the ZIP on GitHub Releases.
-

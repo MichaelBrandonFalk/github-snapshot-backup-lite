@@ -8,7 +8,6 @@ import tempfile
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 from .archive import create_zip_from_folder, sha256_file, verify_zip
 from .config import AppConfig, cache_dir
@@ -50,18 +49,14 @@ class BackupRunner:
         self.cancel_callback = cancel_callback or (lambda: False)
 
     def run(self) -> dict:
-        destination = Path(self.config.backup_destination).expanduser()
-        if not destination:
+        if not self.config.backup_destination:
             raise RuntimeError("Choose a backup destination before running a backup.")
+        destination = Path(self.config.backup_destination).expanduser()
         destination.mkdir(parents=True, exist_ok=True)
         self._check_tools()
 
         user = github_username()
-        repositories = [
-            repo
-            for repo in list_repositories(user)
-            if repo.name_with_owner not in set(self.config.excluded_repositories)
-        ]
+        repositories = self._select_repositories(list_repositories(user))
         self.logger.info("backup start user=%s repositories=%s", user, len(repositories))
 
         date_name = datetime.now().date().isoformat()
@@ -212,6 +207,9 @@ class BackupRunner:
             "backup_version": 1,
             "created_at": started.isoformat(),
             "github_user": user,
+            "backup_scope": self.config.backup_scope,
+            "selected_repositories": self.config.selected_repositories,
+            "excluded_repositories": self.config.excluded_repositories,
             "repositories_found": len(repositories),
             "repositories_successful": sum(1 for r in results if r.status == "success"),
             "repositories_failed": sum(1 for r in results if r.status == "failed"),
@@ -231,6 +229,14 @@ class BackupRunner:
         for old in complete[:-keep]:
             self.logger.info("retention removing=%s", old)
             shutil.rmtree(old)
+
+    def _select_repositories(self, repositories: list[Repository]) -> list[Repository]:
+        excluded = {name.strip() for name in self.config.excluded_repositories if name.strip()}
+        filtered = [repo for repo in repositories if repo.name_with_owner not in excluded]
+        if self.config.backup_scope != "selected":
+            return filtered
+        selected = {name.strip() for name in self.config.selected_repositories if name.strip()}
+        return [repo for repo in filtered if repo.name_with_owner in selected]
 
     def _success(self, repo: Repository, branch: str, commit: str, archive: str, checksum: str, warning: str = "") -> RepoResult:
         return RepoResult(
