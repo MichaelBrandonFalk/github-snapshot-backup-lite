@@ -1,6 +1,6 @@
-# GithubSnapshot V1.1
+# GithubSnapshot V1.2
 
-GithubSnapshot V1.1 is a small macOS utility that keeps weekly point-in-time ZIP snapshots of every repository owned by the authenticated GitHub account.
+GithubSnapshot V1.2 is a small macOS utility that keeps weekly point-in-time ZIP snapshots of every repository owned by the authenticated GitHub account.
 
 It is intentionally not a full GitHub archive. It backs up the current files from `main`, or the repository default branch when `main` does not exist. It does not preserve issues, pull requests, Actions history, every branch, tags, or full Git history.
 
@@ -82,8 +82,8 @@ Local folder backups work now, including folders synced by Google Drive for desk
 The build creates:
 
 ```text
-dist/GithubSnapshot_V1.1.app
-downloads/GithubSnapshot_V1.1_macOS.zip
+dist/GithubSnapshot_V1.2.app
+downloads/GithubSnapshot_V1.2_macOS.zip
 ```
 
 The LaunchAgent uses the exact app executable that saved the settings, so the app bundle can keep its versioned filename.
@@ -99,7 +99,7 @@ The GUI can install a user LaunchAgent at:
 The LaunchAgent runs:
 
 ```text
-GithubSnapshot_V1.1.app/Contents/MacOS/GithubSnapshot_V1.1 --headless-backup
+GithubSnapshot_V1.2.app/Contents/MacOS/GithubSnapshot_V1.2 --headless-backup
 ```
 
 The GUI does not need to remain open.

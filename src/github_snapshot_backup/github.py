@@ -1,10 +1,20 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+
+COMMAND_PATHS = [
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    "/usr/bin",
+    "/bin",
+    "/opt/local/bin",
+]
 
 
 @dataclass(slots=True)
@@ -20,11 +30,31 @@ class Repository:
 
 
 def has_command(command: str) -> bool:
-    return shutil.which(command) is not None
+    return command_path(command) is not None
+
+
+def command_path(command: str) -> str | None:
+    found = shutil.which(command)
+    if found:
+        return found
+    for folder in COMMAND_PATHS:
+        candidate = Path(folder) / command
+        if candidate.exists() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    return None
+
+
+def command_env() -> dict[str, str]:
+    env = os.environ.copy()
+    existing = env.get("PATH", "")
+    env["PATH"] = ":".join([*COMMAND_PATHS, existing])
+    return env
 
 
 def run_command(args: list[str], timeout: int = 60) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(args, text=True, capture_output=True, timeout=timeout, check=False)
+    resolved = command_path(args[0])
+    command = [resolved or args[0], *args[1:]]
+    return subprocess.run(command, text=True, capture_output=True, timeout=timeout, check=False, env=command_env())
 
 
 def github_username() -> str:

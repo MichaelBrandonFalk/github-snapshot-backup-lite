@@ -8,7 +8,7 @@ from .config import AppConfig, BUNDLE_ID, launch_agent_path
 
 
 def executable_for_launchd() -> str:
-    bundle_executable = Path("/Applications/GithubSnapshot_V1.1.app/Contents/MacOS/GithubSnapshot_V1.1")
+    bundle_executable = Path("/Applications/GithubSnapshot_V1.2.app/Contents/MacOS/GithubSnapshot_V1.2")
     if bundle_executable.exists():
         return str(bundle_executable)
     return "github-snapshot-backup"

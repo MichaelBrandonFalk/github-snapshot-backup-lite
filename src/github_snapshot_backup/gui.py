@@ -5,7 +5,7 @@ import sys
 import threading
 from pathlib import Path
 
-from PySide6.QtCore import QObject, Qt, Signal
+from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 
 from .backup import BackupRunner, next_due_description
 from .config import AppConfig, logs_dir
-from .github import github_username, has_command, list_repositories
+from .github import command_path, github_username, has_command, list_repositories
 from .logging_utils import configure_logging
 from .restore_help import RESTORE_HELP
 from .scheduler import install_launch_agent, uninstall_launch_agent
@@ -46,16 +46,18 @@ class MainWindow(QMainWindow):
         self.logger = configure_logging()
         self.signals = BackupSignals()
         self.cancel_requested = False
-        self.setWindowTitle("GithubSnapshot V1.1")
+        self.preflight_prompted = False
+        self.setWindowTitle("GithubSnapshot V1.2")
         self.resize(640, 760)
         self._build_ui()
         self._connect_signals()
         self.refresh_status()
+        QTimer.singleShot(500, self.run_preflight_checks)
 
     def _build_ui(self) -> None:
         root = QWidget()
         layout = QVBoxLayout(root)
-        title = QLabel("GithubSnapshot V1.1")
+        title = QLabel("GithubSnapshot V1.2")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
         layout.addWidget(title)
 
@@ -192,7 +194,7 @@ class MainWindow(QMainWindow):
     def refresh_status(self) -> None:
         try:
             if not has_command("git"):
-                self.github_label.setText("Git is required. Install with: brew install git")
+                self.github_label.setText("Git setup needed. Install GitHub tools.")
             user = github_username()
             repos = list_repositories(user)
             self.github_label.setText(f"Logged in as {user}")
@@ -241,7 +243,7 @@ class MainWindow(QMainWindow):
         if not has_command("brew"):
             QMessageBox.warning(self, "Install GitHub Tools", "Install Homebrew first, then use this button again.")
             return
-        self._open_terminal_command("brew install git gh git-lfs")
+        self._open_terminal_command(f"{command_path('brew') or 'brew'} install git gh git-lfs")
 
     def open_homebrew(self) -> None:
         subprocess.run(["open", "https://brew.sh"], check=False)
@@ -250,7 +252,7 @@ class MainWindow(QMainWindow):
         if not has_command("gh"):
             QMessageBox.warning(self, "Sign In To GitHub", "Install GitHub tools first, then sign in.")
             return
-        self._open_terminal_command("gh auth login")
+        self._open_terminal_command(f"{command_path('gh') or 'gh'} auth login")
 
     def _update_setup_buttons(self) -> None:
         has_brew = has_command("brew")
@@ -258,6 +260,38 @@ class MainWindow(QMainWindow):
         self.homebrew_button.setVisible(not has_brew)
         self.install_tools_button.setVisible(has_brew and not has_gh)
         self.sign_in_button.setVisible(has_gh)
+
+    def run_preflight_checks(self) -> None:
+        if self.preflight_prompted:
+            return
+        self.preflight_prompted = True
+        missing_tools = [tool for tool in ["git", "gh"] if not has_command(tool)]
+        if missing_tools and has_command("brew"):
+            answer = QMessageBox.question(
+                self,
+                "Preflight Setup",
+                "GithubSnapshot needs GitHub tools to run backups. Install git, gh, and git-lfs now?",
+            )
+            if answer == QMessageBox.StandardButton.Yes:
+                self.install_github_tools()
+            return
+        if missing_tools:
+            QMessageBox.information(
+                self,
+                "Preflight Setup",
+                "GithubSnapshot needs Homebrew before it can install GitHub tools. Use Install Homebrew, then reopen the app.",
+            )
+            return
+        try:
+            github_username()
+        except Exception:
+            answer = QMessageBox.question(
+                self,
+                "GitHub Sign In",
+                "GitHub tools are installed. Sign in to GitHub now?",
+            )
+            if answer == QMessageBox.StandardButton.Yes:
+                self.sign_in_to_github()
 
     def _open_terminal_command(self, command: str) -> None:
         escaped = command.replace("\\", "\\\\").replace('"', '\\"')

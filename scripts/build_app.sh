@@ -19,10 +19,12 @@ for line in text.splitlines():
         break
 PY
 )"
+APP_VERSION="V${VERSION%.*}"
+APP_NAME="GithubSnapshot_${APP_VERSION}"
 
 "$PYTHON" -m pip install --no-build-isolation -e ".[build]"
 "$PYTHON" -m PyInstaller \
-  --name "GithubSnapshot_V1.1" \
+  --name "$APP_NAME" \
   --windowed \
   --clean \
   --noconfirm \
@@ -31,6 +33,6 @@ PY
   scripts/pyinstaller_entry.py
 
 mkdir -p downloads
-ZIP_NAME="GithubSnapshot_V1.1_macOS.zip"
-ditto -c -k --sequesterRsrc --keepParent "dist/GithubSnapshot_V1.1.app" "downloads/${ZIP_NAME}"
+ZIP_NAME="${APP_NAME}_macOS.zip"
+ditto -c -k --sequesterRsrc --keepParent "dist/${APP_NAME}.app" "downloads/${ZIP_NAME}"
 echo "Created downloads/${ZIP_NAME}"
