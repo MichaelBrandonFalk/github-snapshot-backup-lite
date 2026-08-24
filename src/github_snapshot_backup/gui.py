@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 import threading
 from pathlib import Path
 
@@ -45,7 +46,7 @@ class MainWindow(QMainWindow):
         self.logger = configure_logging()
         self.signals = BackupSignals()
         self.cancel_requested = False
-        self.setWindowTitle("GitHub Snapshot Backup")
+        self.setWindowTitle("GithubSnapshot V1.1")
         self.resize(640, 760)
         self._build_ui()
         self._connect_signals()
@@ -54,7 +55,7 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         root = QWidget()
         layout = QVBoxLayout(root)
-        title = QLabel("GitHub Snapshot Backup")
+        title = QLabel("GithubSnapshot V1.1")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
         layout.addWidget(title)
 
@@ -96,12 +97,30 @@ class MainWindow(QMainWindow):
 
         buttons = QHBoxLayout()
         self.choose_button = QPushButton("Choose Folder")
+        self.destination_mode = QComboBox()
+        self.destination_mode.addItems([
+            "Local folder",
+            "Direct Google Drive (needs OAuth setup)",
+            "Local folder + Google Drive (local now)",
+        ])
+        mode_index = {"local": 0, "google_drive": 1, "both": 2}.get(self.config.destination_mode, 0)
+        self.destination_mode.setCurrentIndex(mode_index)
         self.open_folder_button = QPushButton("Open Backup Folder")
         self.log_button = QPushButton("View Log")
         buttons.addWidget(self.choose_button)
+        buttons.addWidget(self.destination_mode)
         buttons.addWidget(self.open_folder_button)
         buttons.addWidget(self.log_button)
         layout.addLayout(buttons)
+
+        setup_row = QHBoxLayout()
+        self.homebrew_button = QPushButton("Install Homebrew")
+        self.install_tools_button = QPushButton("Install GitHub Tools")
+        self.sign_in_button = QPushButton("Sign In To GitHub")
+        setup_row.addWidget(self.homebrew_button)
+        setup_row.addWidget(self.install_tools_button)
+        setup_row.addWidget(self.sign_in_button)
+        layout.addLayout(setup_row)
 
         schedule = QHBoxLayout()
         self.auto_check = QCheckBox("Weekly")
@@ -155,12 +174,16 @@ class MainWindow(QMainWindow):
         self.log_button.clicked.connect(self.toggle_log)
         self.restore_button.clicked.connect(self.show_restore_help)
         self.save_button.clicked.connect(self.save_settings)
+        self.homebrew_button.clicked.connect(self.open_homebrew)
+        self.install_tools_button.clicked.connect(self.install_github_tools)
+        self.sign_in_button.clicked.connect(self.sign_in_to_github)
         self.fill_repos_button.clicked.connect(self.fill_found_repositories)
         self.auto_check.stateChanged.connect(self.save_settings)
         self.day_combo.currentIndexChanged.connect(self.save_settings)
         self.time_edit.timeChanged.connect(self.save_settings)
         self.retention_spin.valueChanged.connect(self.save_settings)
         self.scope_combo.currentIndexChanged.connect(self.save_settings)
+        self.destination_mode.currentIndexChanged.connect(self.save_settings)
         self.repo_list_edit.textChanged.connect(lambda: self.save_settings(update_scheduler=False))
         self.signals.progress.connect(self.on_progress)
         self.signals.finished.connect(self.on_finished)
@@ -173,6 +196,9 @@ class MainWindow(QMainWindow):
             user = github_username()
             repos = list_repositories(user)
             self.github_label.setText(f"Logged in as {user}")
+            self.homebrew_button.setVisible(False)
+            self.install_tools_button.setVisible(False)
+            self.sign_in_button.setVisible(False)
             if self.config.backup_scope == "selected":
                 selected = len(self.config.selected_repositories)
                 self.repo_label.setText(f"{len(repos)} found; {selected} selected")
@@ -181,6 +207,7 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             self.github_label.setText(str(exc))
             self.repo_label.setText("Unavailable")
+            self._update_setup_buttons()
 
     def choose_destination(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Choose Backup Destination", self.config.backup_destination or str(Path.home()))
@@ -196,6 +223,7 @@ class MainWindow(QMainWindow):
         self.config.hour = time.hour()
         self.config.minute = time.minute()
         self.config.retention = self.retention_spin.value()
+        self.config.destination_mode = ["local", "google_drive", "both"][self.destination_mode.currentIndex()]
         self.config.backup_scope = "selected" if self.scope_combo.currentIndex() == 1 else "all"
         self.config.selected_repositories = self._repo_lines()
         self.config.save()
@@ -204,10 +232,36 @@ class MainWindow(QMainWindow):
         if not update_scheduler:
             return
         if self.config.automatic_backup:
-            install_launch_agent(self.config)
+            install_launch_agent(self.config, sys.executable)
         else:
             uninstall_launch_agent()
         self.refresh_status()
+
+    def install_github_tools(self) -> None:
+        if not has_command("brew"):
+            QMessageBox.warning(self, "Install GitHub Tools", "Install Homebrew first, then use this button again.")
+            return
+        self._open_terminal_command("brew install git gh git-lfs")
+
+    def open_homebrew(self) -> None:
+        subprocess.run(["open", "https://brew.sh"], check=False)
+
+    def sign_in_to_github(self) -> None:
+        if not has_command("gh"):
+            QMessageBox.warning(self, "Sign In To GitHub", "Install GitHub tools first, then sign in.")
+            return
+        self._open_terminal_command("gh auth login")
+
+    def _update_setup_buttons(self) -> None:
+        has_brew = has_command("brew")
+        has_gh = has_command("gh")
+        self.homebrew_button.setVisible(not has_brew)
+        self.install_tools_button.setVisible(has_brew and not has_gh)
+        self.sign_in_button.setVisible(has_gh)
+
+    def _open_terminal_command(self, command: str) -> None:
+        escaped = command.replace("\\", "\\\\").replace('"', '\\"')
+        subprocess.Popen(["osascript", "-e", f'tell application "Terminal" to do script "{escaped}"'])
 
     def _repo_lines(self) -> list[str]:
         return [

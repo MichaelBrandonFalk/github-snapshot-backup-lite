@@ -51,6 +51,10 @@ class BackupRunner:
     def run(self) -> dict:
         if not self.config.backup_destination:
             raise RuntimeError("Choose a backup destination before running a backup.")
+        if self.config.destination_mode == "google_drive":
+            raise RuntimeError(
+                "Direct Google Drive upload needs Google OAuth setup before it can run. Choose Local folder, or a Google Drive for desktop folder, for this release."
+            )
         destination = Path(self.config.backup_destination).expanduser()
         destination.mkdir(parents=True, exist_ok=True)
         self._check_tools()
@@ -90,6 +94,8 @@ class BackupRunner:
         manifest = self._write_manifest(in_progress, user, repositories, results, started)
         (in_progress / "BACKUP_COMPLETE").write_text(datetime.now().astimezone().isoformat(), encoding="utf-8")
         in_progress.rename(final_dir)
+        if self.config.destination_mode == "both":
+            self.logger.warning("direct Google Drive upload is not configured in this release; local snapshot completed")
         latest_path = destination / "latest.json"
         latest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
         self.config.last_successful_backup = manifest["created_at"]
@@ -208,6 +214,7 @@ class BackupRunner:
             "created_at": started.isoformat(),
             "github_user": user,
             "backup_scope": self.config.backup_scope,
+            "destination_mode": self.config.destination_mode,
             "selected_repositories": self.config.selected_repositories,
             "excluded_repositories": self.config.excluded_repositories,
             "repositories_found": len(repositories),

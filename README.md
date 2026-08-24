@@ -1,17 +1,17 @@
-# GitHub Snapshot Backup Lite
+# GithubSnapshot V1.1
 
-GitHub Snapshot Backup Lite is a small macOS utility that keeps weekly point-in-time ZIP snapshots of every repository owned by the authenticated GitHub account.
+GithubSnapshot V1.1 is a small macOS utility that keeps weekly point-in-time ZIP snapshots of every repository owned by the authenticated GitHub account.
 
 It is intentionally not a full GitHub archive. It backs up the current files from `main`, or the repository default branch when `main` does not exist. It does not preserve issues, pull requests, Actions history, every branch, tags, or full Git history.
 
-The public website is for instructions and downloads. Real backups require the installed macOS app because the app must call `gh`, call `git`, read/write local folders, and install a LaunchAgent for weekly set-and-forget scheduling.
+The public website is for instructions and direct app downloads. Real backups require the installed macOS app because the app must authenticate with GitHub, clone repositories, read/write local folders, and install a LaunchAgent for weekly set-and-forget scheduling.
 
 ## Requirements
 
 - macOS
 - Python 3.10 or newer for source installs
 - `git`
-- GitHub CLI, authenticated with `gh auth login`
+- GitHub CLI, authenticated with `gh auth login` when prompted by the app
 - Optional: `git-lfs`
 
 Install the command-line dependencies with Homebrew:
@@ -60,13 +60,18 @@ github-snapshot-backup --headless-backup
 ## Set-And-Forget Use
 
 1. Open the macOS app.
-2. Sign in to GitHub CLI if prompted.
-3. Choose a backup destination such as a Google Drive for desktop folder.
-4. Leave Repository Mode set to `All discovered repositories`.
-5. Leave Weekly enabled and choose the day/time.
-6. Close the app. The LaunchAgent keeps running scheduled headless backups.
+2. If Homebrew is missing, use the app's Install Homebrew button to open the official Homebrew instructions.
+3. Use the app buttons to install GitHub tools and sign in if prompted.
+4. Choose a backup destination such as a local folder or a Google Drive for desktop folder.
+5. Leave Repository Mode set to `All discovered repositories`.
+6. Leave Weekly enabled and choose the day/time.
+7. Close the app. The LaunchAgent keeps running scheduled headless backups.
 
-Open the app again later to change the folder, schedule, retention count, or switch to a selected repository list.
+Open the app again later to change the folder, schedule, retention count, destination mode, or switch to a selected repository list.
+
+## Google Drive
+
+Local folder backups work now, including folders synced by Google Drive for desktop. Direct Google Drive API upload is listed separately in the app because it requires Google OAuth app setup before it can be enabled safely. There is no built-in GitHub-to-Google-Drive backup connection that avoids authentication.
 
 ## Build The macOS App
 
@@ -77,11 +82,11 @@ Open the app again later to change the folder, schedule, retention count, or swi
 The build creates:
 
 ```text
-dist/GitHub Snapshot Backup.app
-downloads/GitHub_Snapshot_Backup_Lite_v1.0.0_macOS.zip
+dist/GithubSnapshot_V1.1.app
+downloads/GithubSnapshot_V1.1_macOS.zip
 ```
 
-Copy `GitHub Snapshot Backup.app` to `/Applications` for the standard weekly LaunchAgent command.
+The LaunchAgent uses the exact app executable that saved the settings, so the app bundle can keep its versioned filename.
 
 ## Weekly Backups
 
@@ -94,7 +99,7 @@ The GUI can install a user LaunchAgent at:
 The LaunchAgent runs:
 
 ```text
-/Applications/GitHub Snapshot Backup.app/Contents/MacOS/GitHub Snapshot Backup --headless-backup
+GithubSnapshot_V1.1.app/Contents/MacOS/GithubSnapshot_V1.1 --headless-backup
 ```
 
 The GUI does not need to remain open.

@@ -59,17 +59,8 @@ main {
 }
 
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.8fr);
-  gap: 20px;
-  align-items: start;
-}
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 22px;
+  max-width: 760px;
+  padding: 34px 0 12px;
 }
 
 .section-heading h1,
@@ -113,35 +104,16 @@ li {
   background: var(--accent-dark);
 }
 
-.backup-card {
-  display: grid;
-  grid-template-columns: 96px 1fr;
+.link-row {
+  display: flex;
   gap: 16px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
-dl {
-  margin: 0;
-  display: grid;
-  gap: 10px;
-}
-
-dl div {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 8px;
-}
-
-dt {
-  color: var(--muted);
-}
-
-dd {
-  margin: 0;
+.secondary-link {
   font-weight: 700;
-  text-align: right;
+  margin-top: 12px;
 }
 
 .content-band {
@@ -175,9 +147,5 @@ dd {
 
   nav {
     gap: 12px;
-  }
-
-  .backup-card {
-    grid-template-columns: 1fr;
   }
 }

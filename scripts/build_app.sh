@@ -22,7 +22,7 @@ PY
 
 "$PYTHON" -m pip install --no-build-isolation -e ".[build]"
 "$PYTHON" -m PyInstaller \
-  --name "GitHub Snapshot Backup" \
+  --name "GithubSnapshot_V1.1" \
   --windowed \
   --clean \
   --noconfirm \
@@ -31,6 +31,6 @@ PY
   scripts/pyinstaller_entry.py
 
 mkdir -p downloads
-ZIP_NAME="GitHub_Snapshot_Backup_Lite_v${VERSION}_macOS.zip"
-ditto -c -k --sequesterRsrc --keepParent "dist/GitHub Snapshot Backup.app" "downloads/${ZIP_NAME}"
+ZIP_NAME="GithubSnapshot_V1.1_macOS.zip"
+ditto -c -k --sequesterRsrc --keepParent "dist/GithubSnapshot_V1.1.app" "downloads/${ZIP_NAME}"
 echo "Created downloads/${ZIP_NAME}"

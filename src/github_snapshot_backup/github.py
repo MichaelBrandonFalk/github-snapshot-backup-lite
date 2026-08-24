@@ -29,10 +29,10 @@ def run_command(args: list[str], timeout: int = 60) -> subprocess.CompletedProce
 
 def github_username() -> str:
     if not has_command("gh"):
-        raise RuntimeError("GitHub CLI is required. Install it with: brew install gh")
+        raise RuntimeError("GitHub setup needed. Install GitHub CLI, then sign in once.")
     status = run_command(["gh", "auth", "status"], timeout=20)
     if status.returncode != 0:
-        raise RuntimeError("GitHub CLI is not logged in. Run: gh auth login")
+        raise RuntimeError("GitHub setup needed. Sign in with GitHub CLI once.")
     result = run_command(["gh", "api", "user", "--jq", ".login"], timeout=20)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or "Unable to read GitHub username.")
@@ -94,4 +94,3 @@ def branch_commit_sha(name_with_owner: str, branch: str) -> str:
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or f"Unable to read commit for {name_with_owner}@{branch}.")
     return result.stdout.strip()
-

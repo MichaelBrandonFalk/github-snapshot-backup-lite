@@ -33,6 +33,8 @@ class AppConfig:
     hour: int = 2
     minute: int = 0
     retention: int = 4
+    destination_mode: str = "local"
+    google_drive_folder_id: str = ""
     auto_run_missed_backup: bool = True
     backup_scope: str = "all"
     selected_repositories: list[str] = field(default_factory=list)

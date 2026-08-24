@@ -9,8 +9,7 @@
   <body>
     <header class="topbar">
       <div class="brand">
-        <img src="snapshot-mark.svg" alt="" width="34" height="34" />
-        <span>GitHub Snapshot Backup Lite</span>
+        <span>GithubSnapshot V1.1</span>
       </div>
       <nav aria-label="Page sections">
         <a href="#download">Download</a>
@@ -23,45 +22,47 @@
       <section class="hero">
         <div>
           <div class="section-heading">
-            <h1>GitHub Snapshot Backup Lite</h1>
+            <h1>GithubSnapshot V1.1</h1>
             <p>A small macOS app that backs up current repository files on a weekly schedule, then lets you change the folder, schedule, retention, or repository list later.</p>
           </div>
-          <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/latest">Download Latest Release</a>
-        </div>
-
-        <aside class="panel status-panel">
-          <h2>What Runs Where</h2>
-          <div class="backup-card">
-            <img src="snapshot-drive.svg" alt="" width="96" height="96" />
-            <dl>
-              <div><dt>Website</dt><dd>Docs and download</dd></div>
-              <div><dt>macOS App</dt><dd>Real backups</dd></div>
-              <div><dt>Schedule</dt><dd>launchd weekly</dd></div>
-              <div><dt>Destination</dt><dd>Finder folder</dd></div>
-            </dl>
+          <div class="link-row">
+            <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.1.0/GithubSnapshot_V1.1_macOS.zip" download>Download App</a>
+            <a class="secondary-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/latest">View on GitHub</a>
           </div>
-        </aside>
+        </div>
       </section>
 
       <section id="download" class="content-band">
         <h2>Download</h2>
-        <p>The macOS app is distributed as a versioned ZIP release. It requires GitHub CLI authentication and writes snapshots to any Finder-accessible folder, including Google Drive for desktop.</p>
-        <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/latest">Latest GitHub Release</a>
+        <p>The app is distributed as a versioned ZIP. The primary button downloads the app directly; GitHub is available as an extra option for source code and older releases.</p>
+        <div class="link-row">
+          <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.1.0/GithubSnapshot_V1.1_macOS.zip" download>Download GithubSnapshot_V1.1</a>
+          <a class="secondary-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite">GitHub Repository</a>
+        </div>
       </section>
 
       <section id="setup" class="content-band">
         <h2>How To Run It</h2>
         <ol>
-          <li>Download the latest macOS ZIP from GitHub Releases.</li>
-          <li>Unzip it and open `GitHub Snapshot Backup.app`.</li>
+          <li>Download the app ZIP.</li>
+          <li>Unzip it and open `GithubSnapshot_V1.1.app`.</li>
           <li>If macOS blocks the first launch, right-click the app and choose Open.</li>
-          <li>Install and sign in to GitHub CLI with `brew install gh git` and `gh auth login`.</li>
+          <li>If Homebrew is missing, use the app's Install Homebrew button. It opens the official Homebrew instructions.</li>
+          <li>Use the app buttons to install GitHub tools and sign in if prompted.</li>
           <li>Choose a backup folder, leave repository mode on all for set-and-forget backups, and keep Weekly enabled.</li>
           <li>Reopen the app later to change the folder, schedule, retention, or repository list.</li>
         </ol>
       </section>
 
       <section id="settings" class="docs-grid">
+        <article>
+          <h2>Backup Destination</h2>
+          <p>Local folder backups work now. A Google Drive for desktop folder also works now. Direct Google Drive upload is shown separately because it requires Google OAuth setup before it can be enabled safely.</p>
+        </article>
+        <article>
+          <h2>First Run</h2>
+          <p>A fresh Mac may need Homebrew before the app can install `git`, `gh`, and `git-lfs`. The app opens the official Homebrew page instead of running a shell installer without context.</p>
+        </article>
         <article>
           <h2>Repository Mode</h2>
           <p>Use All discovered repositories for set-and-forget backups. Use selected mode only when you want to maintain an explicit owner/repository list.</p>

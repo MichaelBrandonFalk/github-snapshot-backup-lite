@@ -8,7 +8,7 @@ from .config import AppConfig, BUNDLE_ID, launch_agent_path
 
 
 def executable_for_launchd() -> str:
-    bundle_executable = Path("/Applications/GitHub Snapshot Backup.app/Contents/MacOS/GitHub Snapshot Backup")
+    bundle_executable = Path("/Applications/GithubSnapshot_V1.1.app/Contents/MacOS/GithubSnapshot_V1.1")
     if bundle_executable.exists():
         return str(bundle_executable)
     return "github-snapshot-backup"
@@ -41,4 +41,3 @@ def uninstall_launch_agent() -> None:
     if path.exists():
         subprocess.run(["launchctl", "unload", str(path)], capture_output=True, text=True, check=False)
         path.unlink()
-

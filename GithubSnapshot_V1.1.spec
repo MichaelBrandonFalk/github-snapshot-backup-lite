@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='GitHub Snapshot Backup',
+    name='GithubSnapshot_V1.1',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -40,11 +40,11 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='GitHub Snapshot Backup',
+    name='GithubSnapshot_V1.1',
 )
 app = BUNDLE(
     coll,
-    name='GitHub Snapshot Backup.app',
+    name='GithubSnapshot_V1.1.app',
     icon=None,
     bundle_identifier=None,
 )
