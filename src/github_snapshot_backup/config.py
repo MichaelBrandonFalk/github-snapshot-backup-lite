@@ -29,8 +29,8 @@ def launch_agent_path() -> Path:
 class AppConfig:
     backup_destination: str = ""
     automatic_backup: bool = True
-    weekday: int = 6
-    hour: int = 2
+    weekday: int = 2
+    hour: int = 10
     minute: int = 0
     retention: int = 4
     destination_mode: str = "local"

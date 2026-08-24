@@ -12,7 +12,7 @@ from pathlib import Path
 from .archive import create_zip_from_folder, sha256_file, verify_zip
 from .config import AppConfig, cache_dir
 from .google_drive import apply_retention as apply_drive_retention
-from .google_drive import remove_tree, upload_snapshot
+from .google_drive import remote_exists, remove_tree, upload_snapshot
 from .github import Repository, branch_commit_sha, choose_branch, github_username, has_command, list_repositories
 from .github import command_env, command_path
 
@@ -115,6 +115,8 @@ class BackupRunner:
         if missing:
             hints = {"git": "brew install git", "gh": "brew install gh", "rclone": "brew install rclone"}
             raise RuntimeError("Missing required tool(s): " + ", ".join(f"{m} ({hints[m]})" for m in missing))
+        if self.config.destination_mode in {"google_drive", "both"} and not remote_exists(self.config.google_drive_remote):
+            raise RuntimeError("Google Drive is selected but not connected. Click Connect Google Drive before running a backup.")
         if not has_command("git-lfs"):
             self.logger.warning("git-lfs not found; LFS pointer files may be backed up instead of large assets.")
 

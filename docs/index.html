@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GithubSnapshot V1.3</title>
+    <title>GithubSnapshot V1.4</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="topbar">
       <div class="brand">
-        <span>GithubSnapshot V1.3</span>
+        <span>GithubSnapshot V1.4</span>
       </div>
       <nav aria-label="Page sections">
         <a href="#setup">Setup</a>
@@ -21,11 +21,11 @@
       <section class="hero">
         <div>
           <div class="section-heading">
-            <h1>GithubSnapshot V1.3</h1>
+            <h1>GithubSnapshot V1.4</h1>
             <p>A small macOS app that backs up current repository files on a weekly schedule, then lets you change the folder, schedule, retention, or repository list later.</p>
           </div>
           <div class="link-row">
-            <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.3.0/GithubSnapshot_V1.3_macOS.zip" download>Download App</a>
+            <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.4.0/GithubSnapshot_V1.4_macOS.zip" download>Download App</a>
             <a class="secondary-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/latest">View on GitHub</a>
           </div>
         </div>
@@ -35,12 +35,12 @@
         <h2>How To Run It</h2>
         <ol>
           <li>Download the app ZIP.</li>
-          <li>Unzip it and open `GithubSnapshot_V1.3.app`.</li>
+          <li>Unzip it and open `GithubSnapshot_V1.4.app`.</li>
           <li>If macOS blocks the first launch, right-click the app and choose Open.</li>
           <li>If Homebrew is missing, use the app's Install Homebrew button. It opens the official Homebrew instructions.</li>
           <li>Use the app buttons to install GitHub tools and sign in if prompted.</li>
           <li>Choose a backup destination, leave repository mode on all for set-and-forget backups, and keep Weekly enabled.</li>
-          <li>Set the schedule for a time when the Mac is usually awake and online.</li>
+          <li>The default schedule is Wednesday at 10:00 AM. Set it for a time when the Mac is usually awake and online.</li>
           <li>Reopen the app later to change the folder, schedule, retention, or repository list.</li>
         </ol>
       </section>
@@ -60,7 +60,7 @@
         </article>
         <article>
           <h2>Repository Mode</h2>
-          <p>Use All discovered repositories for set-and-forget backups. Use selected mode only when you want to maintain an explicit owner/repository list.</p>
+          <p>Keep All Repositories checked for set-and-forget backups. Each backup scans GitHub at run time, so repositories created after settings were saved are included automatically.</p>
         </article>
         <article>
           <h2>What It Saves</h2>

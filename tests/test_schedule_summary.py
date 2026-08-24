@@ -5,6 +5,14 @@ from github_snapshot_backup.backup import format_backup_summary, is_backup_overd
 from github_snapshot_backup.config import AppConfig
 
 
+def test_default_schedule_is_wednesday_10_am() -> None:
+    config = AppConfig()
+
+    assert config.weekday == 2
+    assert config.hour == 10
+    assert config.minute == 0
+
+
 def test_latest_scheduled_time_uses_current_week_when_time_passed() -> None:
     now = datetime(2026, 8, 24, 12, 0, tzinfo=ZoneInfo("America/Phoenix"))
     config = AppConfig(weekday=0, hour=2, minute=0)
@@ -42,4 +50,3 @@ def test_backup_summary_lists_failed_repositories() -> None:
 
     assert "Failed repositories:" in summary
     assert "- Me/Bad: Authentication failed" in summary
-

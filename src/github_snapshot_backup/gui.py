@@ -48,7 +48,8 @@ class MainWindow(QMainWindow):
         self.signals = BackupSignals()
         self.cancel_requested = False
         self.preflight_prompted = False
-        self.setWindowTitle("GithubSnapshot V1.3")
+        self.drive_warning_shown = False
+        self.setWindowTitle("GithubSnapshot V1.4")
         self.resize(640, 760)
         self._build_ui()
         self._connect_signals()
@@ -58,7 +59,7 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         root = QWidget()
         layout = QVBoxLayout(root)
-        title = QLabel("GithubSnapshot V1.3")
+        title = QLabel("GithubSnapshot V1.4")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
         layout.addWidget(title)
 
@@ -82,23 +83,22 @@ class MainWindow(QMainWindow):
         grid.addWidget(QLabel("Automatic Backup"), 4, 0)
         grid.addWidget(self.schedule_label, 4, 1)
         layout.addLayout(grid)
-        layout.addWidget(self.schedule_hint)
 
         repo_row = QHBoxLayout()
-        self.scope_combo = QComboBox()
-        self.scope_combo.addItems(["All discovered repositories", "Only repositories listed below"])
-        self.scope_combo.setCurrentIndex(1 if self.config.backup_scope == "selected" else 0)
+        self.all_repos_check = QCheckBox("All Repositories (scan at backup time)")
+        self.all_repos_check.setChecked(self.config.backup_scope != "selected")
         self.fill_repos_button = QPushButton("Fill With Found Repositories")
-        repo_row.addWidget(QLabel("Repository Mode"))
-        repo_row.addWidget(self.scope_combo, 1)
+        repo_row.addWidget(self.all_repos_check)
+        repo_row.addStretch(1)
         repo_row.addWidget(self.fill_repos_button)
         layout.addLayout(repo_row)
 
         self.repo_list_edit = QTextEdit()
-        self.repo_list_edit.setPlaceholderText("owner/repository, one per line. Leave mode set to all for set-and-forget backups.")
+        self.repo_list_edit.setPlaceholderText("Optional selected list: owner/repository, one per line.")
         self.repo_list_edit.setFixedHeight(110)
         self.repo_list_edit.setPlainText("\n".join(self.config.selected_repositories))
         self.repo_list_edit.setEnabled(self.config.backup_scope == "selected")
+        self.fill_repos_button.setEnabled(self.config.backup_scope == "selected")
         layout.addWidget(self.repo_list_edit)
 
         buttons = QHBoxLayout()
@@ -149,6 +149,7 @@ class MainWindow(QMainWindow):
         schedule.addWidget(self.retention_spin)
         schedule.addWidget(QLabel("backups"))
         layout.addLayout(schedule)
+        layout.addWidget(self.schedule_hint)
 
         self.progress = QProgressBar()
         self.status_text = QLabel("Ready")
@@ -191,8 +192,8 @@ class MainWindow(QMainWindow):
         self.day_combo.currentIndexChanged.connect(self.save_settings)
         self.time_edit.timeChanged.connect(self.save_settings)
         self.retention_spin.valueChanged.connect(self.save_settings)
-        self.scope_combo.currentIndexChanged.connect(self.save_settings)
-        self.destination_mode.currentIndexChanged.connect(self.save_settings)
+        self.all_repos_check.stateChanged.connect(self.save_settings)
+        self.destination_mode.currentIndexChanged.connect(self.on_destination_mode_changed)
         self.repo_list_edit.textChanged.connect(lambda: self.save_settings(update_scheduler=False))
         self.signals.progress.connect(self.on_progress)
         self.signals.finished.connect(self.on_finished)
@@ -235,10 +236,11 @@ class MainWindow(QMainWindow):
         self.config.minute = time.minute()
         self.config.retention = self.retention_spin.value()
         self.config.destination_mode = ["local", "google_drive", "both"][self.destination_mode.currentIndex()]
-        self.config.backup_scope = "selected" if self.scope_combo.currentIndex() == 1 else "all"
+        self.config.backup_scope = "all" if self.all_repos_check.isChecked() else "selected"
         self.config.selected_repositories = self._repo_lines()
         self.config.save()
         self.repo_list_edit.setEnabled(self.config.backup_scope == "selected")
+        self.fill_repos_button.setEnabled(self.config.backup_scope == "selected")
         self.schedule_label.setText(next_due_description(self.config))
         self._update_drive_controls()
         if not update_scheduler:
@@ -306,6 +308,13 @@ class MainWindow(QMainWindow):
             if answer == QMessageBox.StandardButton.Yes:
                 self.sign_in_to_github()
             return
+        if self.config.destination_mode in {"google_drive", "both"} and not remote_exists(self.config.google_drive_remote):
+            QMessageBox.warning(
+                self,
+                "Google Drive Not Connected",
+                "Google Drive backup will not run until you connect Google Drive. Click Connect Google Drive and finish the sign-in window first.",
+            )
+            return
         if self.config.auto_run_missed_backup and is_backup_overdue(self.config):
             answer = QMessageBox.question(
                 self,
@@ -328,17 +337,32 @@ class MainWindow(QMainWindow):
     def _update_drive_controls(self) -> None:
         uses_drive = self.config.destination_mode in {"google_drive", "both"}
         self.connect_drive_button.setVisible(uses_drive)
+        connected = remote_exists(self.config.google_drive_remote) if uses_drive else False
         if self.config.destination_mode == "google_drive":
             self.choose_button.setEnabled(False)
             self.open_folder_button.setEnabled(False)
-            connected = remote_exists(self.config.google_drive_remote)
             self.destination_label.setText(
-                f"Google Drive: {self.config.google_drive_path}" if connected else "Google Drive not connected"
+                f"Google Drive: {self.config.google_drive_path}" if connected else "Google Drive not connected. Click Connect Google Drive."
             )
+        elif self.config.destination_mode == "both":
+            self.choose_button.setEnabled(True)
+            self.open_folder_button.setEnabled(bool(self.config.backup_destination))
+            local = self.config.backup_destination or "No local folder selected"
+            drive = f"Google Drive: {self.config.google_drive_path}" if connected else "Google Drive not connected. Click Connect Google Drive."
+            self.destination_label.setText(f"{local} + {drive}")
         else:
             self.choose_button.setEnabled(True)
             self.open_folder_button.setEnabled(bool(self.config.backup_destination))
             self.destination_label.setText(self.config.backup_destination or "No folder selected")
+
+    def on_destination_mode_changed(self) -> None:
+        self.save_settings()
+        if self.config.destination_mode in {"google_drive", "both"} and not remote_exists(self.config.google_drive_remote):
+            QMessageBox.warning(
+                self,
+                "Google Drive Not Connected",
+                "Google Drive backup will not run until you connect Google Drive. Click Connect Google Drive and finish the sign-in window first.",
+            )
 
     def _repo_lines(self) -> list[str]:
         return [
@@ -352,7 +376,7 @@ class MainWindow(QMainWindow):
             user = github_username()
             repos = list_repositories(user)
             self.repo_list_edit.setPlainText("\n".join(repo.name_with_owner for repo in repos))
-            self.scope_combo.setCurrentIndex(1)
+            self.all_repos_check.setChecked(False)
             self.save_settings()
         except Exception as exc:
             QMessageBox.warning(self, "Repository List", str(exc))
