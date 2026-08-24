@@ -1,6 +1,6 @@
-# GithubSnapshot V1.2
+# GithubSnapshot V1.3
 
-GithubSnapshot V1.2 is a small macOS utility that keeps weekly point-in-time ZIP snapshots of every repository owned by the authenticated GitHub account.
+GithubSnapshot V1.3 is a small macOS utility that keeps weekly point-in-time ZIP snapshots of every repository owned by the authenticated GitHub account.
 
 It is intentionally not a full GitHub archive. It backs up the current files from `main`, or the repository default branch when `main` does not exist. It does not preserve issues, pull requests, Actions history, every branch, tags, or full Git history.
 
@@ -12,12 +12,13 @@ The public website is for instructions and direct app downloads. Real backups re
 - Python 3.10 or newer for source installs
 - `git`
 - GitHub CLI, authenticated with `gh auth login` when prompted by the app
+- `rclone` for direct Google Drive upload
 - Optional: `git-lfs`
 
 Install the command-line dependencies with Homebrew:
 
 ```bash
-brew install git gh git-lfs
+brew install git gh git-lfs rclone
 gh auth login
 ```
 
@@ -62,16 +63,31 @@ github-snapshot-backup --headless-backup
 1. Open the macOS app.
 2. If Homebrew is missing, use the app's Install Homebrew button to open the official Homebrew instructions.
 3. Use the app buttons to install GitHub tools and sign in if prompted.
-4. Choose a backup destination such as a local folder or a Google Drive for desktop folder.
+4. Choose a backup destination: local folder, Google Drive, or both.
 5. Leave Repository Mode set to `All discovered repositories`.
-6. Leave Weekly enabled and choose the day/time.
+6. Leave Weekly enabled and choose a day/time when the Mac is usually awake and online.
 7. Close the app. The LaunchAgent keeps running scheduled headless backups.
 
 Open the app again later to change the folder, schedule, retention count, destination mode, or switch to a selected repository list.
 
 ## Google Drive
 
-Local folder backups work now, including folders synced by Google Drive for desktop. Direct Google Drive API upload is listed separately in the app because it requires Google OAuth app setup before it can be enabled safely. There is no built-in GitHub-to-Google-Drive backup connection that avoids authentication.
+Local folder backups work for any Finder folder, including folders synced by Google Drive for desktop. Direct Google Drive upload uses `rclone`: click Connect Google Drive once, complete Google's OAuth consent flow, and scheduled backups can upload after that without another sign-in.
+
+## Missed Backups
+
+Set the schedule for a time when the Mac is usually awake and online. macOS may run a missed `launchd` job after wake from sleep, but if the computer was fully off or unavailable, GithubSnapshot checks `last_successful_backup` when the app opens and offers to run the missed backup immediately.
+
+## Backup Summary
+
+Each completed snapshot includes:
+
+```text
+backup_manifest.json
+backup_summary.txt
+```
+
+The summary text lists failed repositories and the recorded error for each one.
 
 ## Build The macOS App
 
@@ -82,8 +98,8 @@ Local folder backups work now, including folders synced by Google Drive for desk
 The build creates:
 
 ```text
-dist/GithubSnapshot_V1.2.app
-downloads/GithubSnapshot_V1.2_macOS.zip
+dist/GithubSnapshot_V1.3.app
+downloads/GithubSnapshot_V1.3_macOS.zip
 ```
 
 The LaunchAgent uses the exact app executable that saved the settings, so the app bundle can keep its versioned filename.
@@ -99,7 +115,7 @@ The GUI can install a user LaunchAgent at:
 The LaunchAgent runs:
 
 ```text
-GithubSnapshot_V1.2.app/Contents/MacOS/GithubSnapshot_V1.2 --headless-backup
+GithubSnapshot_V1.3.app/Contents/MacOS/GithubSnapshot_V1.3 --headless-backup
 ```
 
 The GUI does not need to remain open.

@@ -25,8 +25,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .backup import BackupRunner, next_due_description
+from .backup import BackupRunner, is_backup_overdue, next_due_description
 from .config import AppConfig, logs_dir
+from .google_drive import configure_remote_command, remote_exists
 from .github import command_path, github_username, has_command, list_repositories
 from .logging_utils import configure_logging
 from .restore_help import RESTORE_HELP
@@ -47,7 +48,7 @@ class MainWindow(QMainWindow):
         self.signals = BackupSignals()
         self.cancel_requested = False
         self.preflight_prompted = False
-        self.setWindowTitle("GithubSnapshot V1.2")
+        self.setWindowTitle("GithubSnapshot V1.3")
         self.resize(640, 760)
         self._build_ui()
         self._connect_signals()
@@ -57,7 +58,7 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         root = QWidget()
         layout = QVBoxLayout(root)
-        title = QLabel("GithubSnapshot V1.2")
+        title = QLabel("GithubSnapshot V1.3")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
         layout.addWidget(title)
 
@@ -67,6 +68,8 @@ class MainWindow(QMainWindow):
         self.destination_label = QLabel(self.config.backup_destination or "No folder selected")
         self.last_backup_label = QLabel(self.config.last_successful_backup or "Never")
         self.schedule_label = QLabel(next_due_description(self.config))
+        self.schedule_hint = QLabel("Choose a time when this Mac is usually awake and online.")
+        self.schedule_hint.setWordWrap(True)
 
         grid.addWidget(QLabel("GitHub"), 0, 0)
         grid.addWidget(self.github_label, 0, 1)
@@ -79,6 +82,7 @@ class MainWindow(QMainWindow):
         grid.addWidget(QLabel("Automatic Backup"), 4, 0)
         grid.addWidget(self.schedule_label, 4, 1)
         layout.addLayout(grid)
+        layout.addWidget(self.schedule_hint)
 
         repo_row = QHBoxLayout()
         self.scope_combo = QComboBox()
@@ -102,22 +106,24 @@ class MainWindow(QMainWindow):
         self.destination_mode = QComboBox()
         self.destination_mode.addItems([
             "Local folder",
-            "Direct Google Drive (needs OAuth setup)",
-            "Local folder + Google Drive (local now)",
+            "Google Drive",
+            "Local folder + Google Drive",
         ])
         mode_index = {"local": 0, "google_drive": 1, "both": 2}.get(self.config.destination_mode, 0)
         self.destination_mode.setCurrentIndex(mode_index)
         self.open_folder_button = QPushButton("Open Backup Folder")
+        self.connect_drive_button = QPushButton("Connect Google Drive")
         self.log_button = QPushButton("View Log")
         buttons.addWidget(self.choose_button)
         buttons.addWidget(self.destination_mode)
+        buttons.addWidget(self.connect_drive_button)
         buttons.addWidget(self.open_folder_button)
         buttons.addWidget(self.log_button)
         layout.addLayout(buttons)
 
         setup_row = QHBoxLayout()
         self.homebrew_button = QPushButton("Install Homebrew")
-        self.install_tools_button = QPushButton("Install GitHub Tools")
+        self.install_tools_button = QPushButton("Install Required Tools")
         self.sign_in_button = QPushButton("Sign In To GitHub")
         setup_row.addWidget(self.homebrew_button)
         setup_row.addWidget(self.install_tools_button)
@@ -173,6 +179,7 @@ class MainWindow(QMainWindow):
         self.backup_button.clicked.connect(self.start_backup)
         self.cancel_button.clicked.connect(self.request_cancel)
         self.open_folder_button.clicked.connect(self.open_backup_folder)
+        self.connect_drive_button.clicked.connect(self.connect_google_drive)
         self.log_button.clicked.connect(self.toggle_log)
         self.restore_button.clicked.connect(self.show_restore_help)
         self.save_button.clicked.connect(self.save_settings)
@@ -201,6 +208,7 @@ class MainWindow(QMainWindow):
             self.homebrew_button.setVisible(False)
             self.install_tools_button.setVisible(False)
             self.sign_in_button.setVisible(False)
+            self._update_drive_controls()
             if self.config.backup_scope == "selected":
                 selected = len(self.config.selected_repositories)
                 self.repo_label.setText(f"{len(repos)} found; {selected} selected")
@@ -210,6 +218,7 @@ class MainWindow(QMainWindow):
             self.github_label.setText(str(exc))
             self.repo_label.setText("Unavailable")
             self._update_setup_buttons()
+            self._update_drive_controls()
 
     def choose_destination(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Choose Backup Destination", self.config.backup_destination or str(Path.home()))
@@ -231,6 +240,7 @@ class MainWindow(QMainWindow):
         self.config.save()
         self.repo_list_edit.setEnabled(self.config.backup_scope == "selected")
         self.schedule_label.setText(next_due_description(self.config))
+        self._update_drive_controls()
         if not update_scheduler:
             return
         if self.config.automatic_backup:
@@ -243,7 +253,7 @@ class MainWindow(QMainWindow):
         if not has_command("brew"):
             QMessageBox.warning(self, "Install GitHub Tools", "Install Homebrew first, then use this button again.")
             return
-        self._open_terminal_command(f"{command_path('brew') or 'brew'} install git gh git-lfs")
+        self._open_terminal_command(f"{command_path('brew') or 'brew'} install git gh git-lfs rclone")
 
     def open_homebrew(self) -> None:
         subprocess.run(["open", "https://brew.sh"], check=False)
@@ -257,8 +267,9 @@ class MainWindow(QMainWindow):
     def _update_setup_buttons(self) -> None:
         has_brew = has_command("brew")
         has_gh = has_command("gh")
+        needs_rclone = self.config.destination_mode in {"google_drive", "both"} and not has_command("rclone")
         self.homebrew_button.setVisible(not has_brew)
-        self.install_tools_button.setVisible(has_brew and not has_gh)
+        self.install_tools_button.setVisible(has_brew and (not has_gh or needs_rclone))
         self.sign_in_button.setVisible(has_gh)
 
     def run_preflight_checks(self) -> None:
@@ -266,11 +277,13 @@ class MainWindow(QMainWindow):
             return
         self.preflight_prompted = True
         missing_tools = [tool for tool in ["git", "gh"] if not has_command(tool)]
+        if self.config.destination_mode in {"google_drive", "both"} and not has_command("rclone"):
+            missing_tools.append("rclone")
         if missing_tools and has_command("brew"):
             answer = QMessageBox.question(
                 self,
                 "Preflight Setup",
-                "GithubSnapshot needs GitHub tools to run backups. Install git, gh, and git-lfs now?",
+                "GithubSnapshot needs a few command-line tools to run backups. Install git, gh, git-lfs, and rclone now?",
             )
             if answer == QMessageBox.StandardButton.Yes:
                 self.install_github_tools()
@@ -292,10 +305,40 @@ class MainWindow(QMainWindow):
             )
             if answer == QMessageBox.StandardButton.Yes:
                 self.sign_in_to_github()
+            return
+        if self.config.auto_run_missed_backup and is_backup_overdue(self.config):
+            answer = QMessageBox.question(
+                self,
+                "Missed Backup",
+                "The scheduled backup was missed while this Mac was off, asleep, or unavailable. Run it now?",
+            )
+            if answer == QMessageBox.StandardButton.Yes:
+                self.start_backup()
 
     def _open_terminal_command(self, command: str) -> None:
         escaped = command.replace("\\", "\\\\").replace('"', '\\"')
         subprocess.Popen(["osascript", "-e", f'tell application "Terminal" to do script "{escaped}"'])
+
+    def connect_google_drive(self) -> None:
+        if not has_command("rclone"):
+            QMessageBox.warning(self, "Connect Google Drive", "Install required tools first. Google Drive upload uses rclone for OAuth and uploads.")
+            return
+        self._open_terminal_command(configure_remote_command(self.config.google_drive_remote))
+
+    def _update_drive_controls(self) -> None:
+        uses_drive = self.config.destination_mode in {"google_drive", "both"}
+        self.connect_drive_button.setVisible(uses_drive)
+        if self.config.destination_mode == "google_drive":
+            self.choose_button.setEnabled(False)
+            self.open_folder_button.setEnabled(False)
+            connected = remote_exists(self.config.google_drive_remote)
+            self.destination_label.setText(
+                f"Google Drive: {self.config.google_drive_path}" if connected else "Google Drive not connected"
+            )
+        else:
+            self.choose_button.setEnabled(True)
+            self.open_folder_button.setEnabled(bool(self.config.backup_destination))
+            self.destination_label.setText(self.config.backup_destination or "No folder selected")
 
     def _repo_lines(self) -> list[str]:
         return [
@@ -353,9 +396,9 @@ class MainWindow(QMainWindow):
         self.backup_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         self.last_backup_label.setText(manifest["created_at"])
-        self.status_text.setText(
-            f"Backup complete. {manifest['repositories_successful']} successful, {manifest['repositories_failed']} failed."
-        )
+        self.status_text.setText(self._completion_text(manifest))
+        if manifest.get("repositories_failed", 0):
+            QMessageBox.warning(self, "Backup Completed With Failures", self._completion_text(manifest))
         self.refresh_status()
 
     def on_failed(self, message: str) -> None:
@@ -375,6 +418,24 @@ class MainWindow(QMainWindow):
 
     def show_restore_help(self) -> None:
         QMessageBox.information(self, "Restore Help", RESTORE_HELP)
+
+    def _completion_text(self, manifest: dict) -> str:
+        text = (
+            f"Backup complete. {manifest['repositories_successful']} successful, "
+            f"{manifest['repositories_failed']} failed."
+        )
+        failures = [repo for repo in manifest.get("repositories", []) if repo.get("status") == "failed"]
+        if not failures:
+            return text
+        details = "\n\nFailed:\n" + "\n".join(
+            f"- {repo.get('name_with_owner') or repo.get('name')}: {repo.get('error') or 'No error recorded'}"
+            for repo in failures[:8]
+        )
+        if len(failures) > 8:
+            details += f"\n- ...and {len(failures) - 8} more. See backup_summary.txt."
+        else:
+            details += "\n\nSee backup_summary.txt in the snapshot folder."
+        return text + details
 
 
 def run_gui() -> int:

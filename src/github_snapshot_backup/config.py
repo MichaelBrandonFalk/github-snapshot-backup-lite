@@ -34,7 +34,8 @@ class AppConfig:
     minute: int = 0
     retention: int = 4
     destination_mode: str = "local"
-    google_drive_folder_id: str = ""
+    google_drive_remote: str = "GithubSnapshotDrive"
+    google_drive_path: str = "GithubSnapshot Backups"
     auto_run_missed_backup: bool = True
     backup_scope: str = "all"
     selected_repositories: list[str] = field(default_factory=list)

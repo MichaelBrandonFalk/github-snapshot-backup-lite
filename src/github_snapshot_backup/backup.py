@@ -6,12 +6,15 @@ import shutil
 import subprocess
 import tempfile
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from .archive import create_zip_from_folder, sha256_file, verify_zip
 from .config import AppConfig, cache_dir
+from .google_drive import apply_retention as apply_drive_retention
+from .google_drive import remove_tree, upload_snapshot
 from .github import Repository, branch_commit_sha, choose_branch, github_username, has_command, list_repositories
+from .github import command_env, command_path
 
 
 @dataclass(slots=True)
@@ -49,13 +52,9 @@ class BackupRunner:
         self.cancel_callback = cancel_callback or (lambda: False)
 
     def run(self) -> dict:
-        if not self.config.backup_destination:
+        if self.config.destination_mode in {"local", "both"} and not self.config.backup_destination:
             raise RuntimeError("Choose a backup destination before running a backup.")
-        if self.config.destination_mode == "google_drive":
-            raise RuntimeError(
-                "Direct Google Drive upload needs Google OAuth setup before it can run. Choose Local folder, or a Google Drive for desktop folder, for this release."
-            )
-        destination = Path(self.config.backup_destination).expanduser()
+        destination = self._local_destination()
         destination.mkdir(parents=True, exist_ok=True)
         self._check_tools()
 
@@ -92,22 +91,29 @@ class BackupRunner:
                 (in_progress / "BACKUP_INCOMPLETE").write_text("cancelled\n", encoding="utf-8")
 
         manifest = self._write_manifest(in_progress, user, repositories, results, started)
+        (in_progress / "backup_summary.txt").write_text(format_backup_summary(manifest), encoding="utf-8")
         (in_progress / "BACKUP_COMPLETE").write_text(datetime.now().astimezone().isoformat(), encoding="utf-8")
         in_progress.rename(final_dir)
-        if self.config.destination_mode == "both":
-            self.logger.warning("direct Google Drive upload is not configured in this release; local snapshot completed")
         latest_path = destination / "latest.json"
         latest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        if self.config.destination_mode in {"google_drive", "both"}:
+            self._upload_to_google_drive(final_dir, latest_path)
         self.config.last_successful_backup = manifest["created_at"]
         self.config.save()
         self._apply_retention(destination)
+        if self.config.destination_mode in {"google_drive", "both"}:
+            apply_drive_retention(self.config.google_drive_remote, self.config.google_drive_path, self.config.retention)
+        if self.config.destination_mode == "google_drive":
+            remove_tree(destination)
         self.logger.info("backup completion success=%s failed=%s", manifest["repositories_successful"], manifest["repositories_failed"])
         return manifest
 
     def _check_tools(self) -> None:
         missing = [tool for tool in ["git", "gh"] if not has_command(tool)]
+        if self.config.destination_mode in {"google_drive", "both"} and not has_command("rclone"):
+            missing.append("rclone")
         if missing:
-            hints = {"git": "brew install git", "gh": "brew install gh"}
+            hints = {"git": "brew install git", "gh": "brew install gh", "rclone": "brew install rclone"}
             raise RuntimeError("Missing required tool(s): " + ", ".join(f"{m} ({hints[m]})" for m in missing))
         if not has_command("git-lfs"):
             self.logger.warning("git-lfs not found; LFS pointer files may be backed up instead of large assets.")
@@ -171,9 +177,26 @@ class BackupRunner:
             url,
             str(clone_path),
         ]
-        result = subprocess.run(args, text=True, capture_output=True, check=False)
+        resolved = command_path("git")
+        command = [resolved or "git", *args[1:]]
+        result = subprocess.run(command, text=True, capture_output=True, check=False, env=command_env())
         if result.returncode != 0:
             raise RuntimeError(result.stderr.strip() or "git clone failed")
+
+    def _local_destination(self) -> Path:
+        if self.config.destination_mode == "google_drive":
+            return cache_dir() / "google-drive-staging"
+        return Path(self.config.backup_destination).expanduser()
+
+    def _upload_to_google_drive(self, snapshot_dir: Path, latest_json: Path) -> None:
+        self._progress_repo("Google Drive", "Uploading snapshot")
+        upload_snapshot(snapshot_dir, latest_json, self.config.google_drive_remote, self.config.google_drive_path)
+        self.logger.info(
+            "google drive upload complete remote=%s path=%s snapshot=%s",
+            self.config.google_drive_remote,
+            self.config.google_drive_path,
+            snapshot_dir.name,
+        )
 
     def _try_reuse_previous(self, repo: Repository, commit: str, archive_path: Path, manifest: dict | None) -> bool:
         if not manifest:
@@ -215,6 +238,8 @@ class BackupRunner:
             "github_user": user,
             "backup_scope": self.config.backup_scope,
             "destination_mode": self.config.destination_mode,
+            "google_drive_remote": self.config.google_drive_remote,
+            "google_drive_path": self.config.google_drive_path,
             "selected_repositories": self.config.selected_repositories,
             "excluded_repositories": self.config.excluded_repositories,
             "repositories_found": len(repositories),
@@ -273,3 +298,56 @@ class BackupRunner:
 def next_due_description(config: AppConfig) -> str:
     weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     return f"{weekdays[config.weekday]} at {config.hour:02d}:{config.minute:02d}"
+
+
+def latest_scheduled_time(config: AppConfig, now: datetime | None = None) -> datetime:
+    current = now or datetime.now().astimezone()
+    scheduled = current.replace(hour=config.hour, minute=config.minute, second=0, microsecond=0)
+    days_since = (current.weekday() - config.weekday) % 7
+    scheduled = scheduled - timedelta(days=days_since)
+    if scheduled > current:
+        scheduled = scheduled - timedelta(days=7)
+    return scheduled
+
+
+def is_backup_overdue(config: AppConfig, now: datetime | None = None) -> bool:
+    if not config.automatic_backup or not config.last_successful_backup:
+        return False
+    try:
+        last_success = datetime.fromisoformat(config.last_successful_backup)
+    except ValueError:
+        return True
+    current = now or datetime.now().astimezone()
+    if last_success.tzinfo is None and current.tzinfo is not None:
+        last_success = last_success.replace(tzinfo=current.tzinfo)
+    return last_success < latest_scheduled_time(config, current)
+
+
+def format_backup_summary(manifest: dict) -> str:
+    lines = [
+        "GithubSnapshot Backup Summary",
+        "",
+        f"Created: {manifest.get('created_at', '')}",
+        f"GitHub user: {manifest.get('github_user', '')}",
+        f"Repositories found: {manifest.get('repositories_found', 0)}",
+        f"Successful: {manifest.get('repositories_successful', 0)}",
+        f"Failed: {manifest.get('repositories_failed', 0)}",
+        "",
+    ]
+    failures = [repo for repo in manifest.get("repositories", []) if repo.get("status") == "failed"]
+    if failures:
+        lines.append("Failed repositories:")
+        for repo in failures:
+            name = repo.get("name_with_owner") or repo.get("name") or "Unknown repository"
+            error = repo.get("error") or "No error recorded"
+            lines.append(f"- {name}: {error}")
+        lines.append("")
+    warnings = [repo for repo in manifest.get("repositories", []) if repo.get("warning")]
+    if warnings:
+        lines.append("Warnings:")
+        for repo in warnings:
+            name = repo.get("name_with_owner") or repo.get("name") or "Unknown repository"
+            lines.append(f"- {name}: {repo.get('warning')}")
+        lines.append("")
+    lines.append("See backup_manifest.json for full machine-readable details.")
+    return "\n".join(lines) + "\n"

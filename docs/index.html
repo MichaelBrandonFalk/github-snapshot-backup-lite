@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GithubSnapshot V1.2</title>
+    <title>GithubSnapshot V1.3</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="topbar">
       <div class="brand">
-        <span>GithubSnapshot V1.2</span>
+        <span>GithubSnapshot V1.3</span>
       </div>
       <nav aria-label="Page sections">
         <a href="#setup">Setup</a>
@@ -21,11 +21,11 @@
       <section class="hero">
         <div>
           <div class="section-heading">
-            <h1>GithubSnapshot V1.2</h1>
+            <h1>GithubSnapshot V1.3</h1>
             <p>A small macOS app that backs up current repository files on a weekly schedule, then lets you change the folder, schedule, retention, or repository list later.</p>
           </div>
           <div class="link-row">
-            <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.2.0/GithubSnapshot_V1.2_macOS.zip" download>Download App</a>
+            <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.3.0/GithubSnapshot_V1.3_macOS.zip" download>Download App</a>
             <a class="secondary-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/latest">View on GitHub</a>
           </div>
         </div>
@@ -35,11 +35,12 @@
         <h2>How To Run It</h2>
         <ol>
           <li>Download the app ZIP.</li>
-          <li>Unzip it and open `GithubSnapshot_V1.2.app`.</li>
+          <li>Unzip it and open `GithubSnapshot_V1.3.app`.</li>
           <li>If macOS blocks the first launch, right-click the app and choose Open.</li>
           <li>If Homebrew is missing, use the app's Install Homebrew button. It opens the official Homebrew instructions.</li>
           <li>Use the app buttons to install GitHub tools and sign in if prompted.</li>
-          <li>Choose a backup folder, leave repository mode on all for set-and-forget backups, and keep Weekly enabled.</li>
+          <li>Choose a backup destination, leave repository mode on all for set-and-forget backups, and keep Weekly enabled.</li>
+          <li>Set the schedule for a time when the Mac is usually awake and online.</li>
           <li>Reopen the app later to change the folder, schedule, retention, or repository list.</li>
         </ol>
       </section>
@@ -47,7 +48,11 @@
       <section id="settings" class="docs-grid">
         <article>
           <h2>Backup Destination</h2>
-          <p>Local folder backups work now. A Google Drive for desktop folder also works now. Direct Google Drive upload is shown separately because it requires Google OAuth setup before it can be enabled safely.</p>
+          <p>Choose Local folder, Google Drive, or both. Google Drive uses rclone for the first OAuth connection, then scheduled uploads run without another sign-in.</p>
+        </article>
+        <article>
+          <h2>Missed Schedule</h2>
+          <p>Pick a time when the Mac is normally on. If a scheduled backup is missed because the Mac was off or unavailable, the app checks for that on the next launch and offers to run the backup immediately.</p>
         </article>
         <article>
           <h2>First Run</h2>
