@@ -57,6 +57,13 @@ def command_path(command: str) -> str | None:
 
 def command_env() -> dict[str, str]:
     env = os.environ.copy()
+    if sys.platform == "linux" and getattr(sys, "frozen", False):
+        # External system tools must not load the app's bundled Qt libraries.
+        original = env.get("LD_LIBRARY_PATH_ORIG")
+        if original is None:
+            env.pop("LD_LIBRARY_PATH", None)
+        else:
+            env["LD_LIBRARY_PATH"] = original
     existing = env.get("PATH", "")
     env["PATH"] = os.pathsep.join([*COMMAND_PATHS, existing])
     return env

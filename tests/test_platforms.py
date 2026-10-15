@@ -44,6 +44,16 @@ def test_command_environment_uses_native_separator(monkeypatch):
     assert github.command_env()["PATH"] == os.pathsep.join(["first", "second", "existing"])
 
 
+def test_packaged_linux_restores_system_libraries_for_tools(monkeypatch):
+    monkeypatch.setattr(github.sys, "platform", "linux")
+    monkeypatch.setattr(github.sys, "frozen", True, raising=False)
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/opt/app/_internal")
+    monkeypatch.setenv("LD_LIBRARY_PATH_ORIG", "/custom/system/libs")
+    assert github.command_env()["LD_LIBRARY_PATH"] == "/custom/system/libs"
+    monkeypatch.delenv("LD_LIBRARY_PATH_ORIG")
+    assert "LD_LIBRARY_PATH" not in github.command_env()
+
+
 def test_windows_task_preserves_paths_and_catches_up():
     command = [r"C:\My Apps\GithubSnapshot_V1.5.exe", "--headless-backup"]
     xml = scheduler.windows_task_xml(config.AppConfig(), command, r"PC\User & Name")
