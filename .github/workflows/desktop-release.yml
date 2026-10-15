@@ -55,7 +55,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $app = Resolve-Path dist/GithubSnapshot_V1.5.2/GithubSnapshot_V1.5.exe
+          $app = Resolve-Path dist/GithubSnapshot_V1.5.2/GithubSnapshot_V1.5.2.exe
           $process = Start-Process -FilePath $app -ArgumentList '--smoke-test' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Packaged GUI smoke check failed: $($process.ExitCode)" }
       - name: Publish native assets and checksums

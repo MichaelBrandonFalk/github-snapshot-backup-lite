@@ -8,7 +8,7 @@ The [download page](https://michaelbrandonfalk.github.io/github-snapshot-backup-
 
 ## Downloads And Installation
 
-- [Windows 10/11 x64 ZIP](https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.2/GithubSnapshot_V1.5.2_Windows_x64.zip): extract the entire ZIP to a permanent folder, then open `GithubSnapshot_V1.5.exe`. Use Install Required Tools for Git, GitHub CLI, and rclone through winget. If winget is missing, install Microsoft's App Installer. Reopen the app after tools are installed.
+- [Windows 10/11 x64 ZIP](https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.2/GithubSnapshot_V1.5.2_Windows_x64.zip): extract the entire ZIP to a permanent folder, then open `GithubSnapshot_V1.5.2.exe`. Use Install Required Tools for Git, GitHub CLI, and rclone through winget. If winget is missing, install Microsoft's App Installer. Reopen the app after tools are installed.
 - [Linux Mint 21/22 amd64 installer](https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.2/GithubSnapshot_V1.5.2_LinuxMint_amd64.deb): open with Package Installer, or run `sudo apt install ./GithubSnapshot_V1.5.2_LinuxMint_amd64.deb`. Dependencies are installed through apt. Launch from the applications menu.
 - [macOS Apple Silicon ZIP](https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.2/GithubSnapshot_V1.5.2_macOS.zip): extract and move the app to Applications. Use the setup buttons if prompted.
 
@@ -108,7 +108,7 @@ The summary text lists failed repositories and the recorded error for each one.
 The build creates:
 
 ```text
-dist/GithubSnapshot_V1.5.app
+dist/GithubSnapshot_V1.5.2.app
 downloads/GithubSnapshot_V1.5.2_macOS.zip
 ```
 
@@ -135,7 +135,7 @@ The saved schedule uses a macOS LaunchAgent, a Windows Task Scheduler task named
 The LaunchAgent runs:
 
 ```text
-GithubSnapshot_V1.5.app/Contents/MacOS/GithubSnapshot_V1.5.2 --headless-backup
+GithubSnapshot_V1.5.2.app/Contents/MacOS/GithubSnapshot_V1.5.2 --headless-backup
 ```
 
 After upgrading or moving the app, open the new version and save settings to update the scheduled executable. Settings and logs live in the user's macOS Library, Windows AppData, or Linux XDG directories.
