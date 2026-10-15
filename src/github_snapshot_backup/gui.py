@@ -5,7 +5,8 @@ import sys
 import threading
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QTimer, Signal
+from PySide6.QtCore import QObject, QTimer, Signal, QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -31,7 +32,8 @@ from .google_drive import configure_remote_command, remote_exists
 from .github import command_path, github_username, has_command, list_repositories
 from .logging_utils import configure_logging
 from .restore_help import RESTORE_HELP
-from .scheduler import install_launch_agent, uninstall_launch_agent
+from .scheduler import install_schedule, uninstall_schedule
+from .platform_support import install_tools_command, open_terminal, package_manager, shell_command
 
 
 class BackupSignals(QObject):
@@ -49,7 +51,7 @@ class MainWindow(QMainWindow):
         self.cancel_requested = False
         self.preflight_prompted = False
         self.drive_warning_shown = False
-        self.setWindowTitle("GithubSnapshot V1.4")
+        self.setWindowTitle("GithubSnapshot V1.5")
         self.resize(640, 760)
         self._build_ui()
         self._connect_signals()
@@ -59,7 +61,7 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         root = QWidget()
         layout = QVBoxLayout(root)
-        title = QLabel("GithubSnapshot V1.4")
+        title = QLabel("GithubSnapshot V1.5")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
         layout.addWidget(title)
 
@@ -69,7 +71,7 @@ class MainWindow(QMainWindow):
         self.destination_label = QLabel(self.config.backup_destination or "No folder selected")
         self.last_backup_label = QLabel(self.config.last_successful_backup or "Never")
         self.schedule_label = QLabel(next_due_description(self.config))
-        self.schedule_hint = QLabel("Choose a time when this Mac is usually awake and online.")
+        self.schedule_hint = QLabel("Choose a time when this computer is usually awake, signed in, and online.")
         self.schedule_hint.setWordWrap(True)
 
         grid.addWidget(QLabel("GitHub"), 0, 0)
@@ -183,16 +185,16 @@ class MainWindow(QMainWindow):
         self.connect_drive_button.clicked.connect(self.connect_google_drive)
         self.log_button.clicked.connect(self.toggle_log)
         self.restore_button.clicked.connect(self.show_restore_help)
-        self.save_button.clicked.connect(self.save_settings)
+        self.save_button.clicked.connect(lambda: self.save_settings())
         self.homebrew_button.clicked.connect(self.open_homebrew)
         self.install_tools_button.clicked.connect(self.install_github_tools)
         self.sign_in_button.clicked.connect(self.sign_in_to_github)
         self.fill_repos_button.clicked.connect(self.fill_found_repositories)
-        self.auto_check.stateChanged.connect(self.save_settings)
-        self.day_combo.currentIndexChanged.connect(self.save_settings)
-        self.time_edit.timeChanged.connect(self.save_settings)
-        self.retention_spin.valueChanged.connect(self.save_settings)
-        self.all_repos_check.stateChanged.connect(self.save_settings)
+        self.auto_check.stateChanged.connect(lambda: self.save_settings())
+        self.day_combo.currentIndexChanged.connect(lambda: self.save_settings())
+        self.time_edit.timeChanged.connect(lambda: self.save_settings())
+        self.retention_spin.valueChanged.connect(lambda: self.save_settings())
+        self.all_repos_check.stateChanged.connect(lambda: self.save_settings())
         self.destination_mode.currentIndexChanged.connect(self.on_destination_mode_changed)
         self.repo_list_edit.textChanged.connect(lambda: self.save_settings(update_scheduler=False))
         self.signals.progress.connect(self.on_progress)
@@ -206,8 +208,7 @@ class MainWindow(QMainWindow):
             user = github_username()
             repos = list_repositories(user)
             self.github_label.setText(f"Logged in as {user}")
-            self.homebrew_button.setVisible(False)
-            self.install_tools_button.setVisible(False)
+            self._update_setup_buttons()
             self.sign_in_button.setVisible(False)
             self._update_drive_controls()
             if self.config.backup_scope == "selected":
@@ -228,7 +229,7 @@ class MainWindow(QMainWindow):
             self.destination_label.setText(folder)
             self.save_settings()
 
-    def save_settings(self, update_scheduler: bool = True) -> None:
+    def save_settings(self, update_scheduler: bool = True) -> bool:
         self.config.automatic_backup = self.auto_check.isChecked()
         self.config.weekday = self.day_combo.currentIndex()
         time = self.time_edit.time()
@@ -244,34 +245,41 @@ class MainWindow(QMainWindow):
         self.schedule_label.setText(next_due_description(self.config))
         self._update_drive_controls()
         if not update_scheduler:
-            return
-        if self.config.automatic_backup:
-            install_launch_agent(self.config, sys.executable)
-        else:
-            uninstall_launch_agent()
+            return True
+        try:
+            if self.config.automatic_backup:
+                install_schedule(self.config)
+            else:
+                uninstall_schedule()
+        except Exception as exc:
+            self.status_text.setText(str(exc))
+            QMessageBox.warning(self, "Schedule Not Saved", str(exc))
+            return False
         self.refresh_status()
+        return True
 
     def install_github_tools(self) -> None:
-        if not has_command("brew"):
-            QMessageBox.warning(self, "Install GitHub Tools", "Install Homebrew first, then use this button again.")
+        if not has_command(package_manager()):
+            message = "Install Homebrew first using the Install Homebrew button." if sys.platform == "darwin" else "Install App Installer from the Microsoft Store to enable winget, then try again."
+            QMessageBox.warning(self, "Install Required Tools", message)
             return
-        self._open_terminal_command(f"{command_path('brew') or 'brew'} install git gh git-lfs rclone")
+        self._open_terminal_command(install_tools_command())
 
     def open_homebrew(self) -> None:
-        subprocess.run(["open", "https://brew.sh"], check=False)
+        QDesktopServices.openUrl(QUrl("https://brew.sh"))
 
     def sign_in_to_github(self) -> None:
         if not has_command("gh"):
             QMessageBox.warning(self, "Sign In To GitHub", "Install GitHub tools first, then sign in.")
             return
-        self._open_terminal_command(f"{command_path('gh') or 'gh'} auth login")
+        self._open_terminal_command(shell_command([command_path('gh') or 'gh', "auth", "login", "--web", "--git-protocol", "https"]))
 
     def _update_setup_buttons(self) -> None:
-        has_brew = has_command("brew")
+        has_brew = has_command("brew") if sys.platform == "darwin" else False
         has_gh = has_command("gh")
         needs_rclone = self.config.destination_mode in {"google_drive", "both"} and not has_command("rclone")
-        self.homebrew_button.setVisible(not has_brew)
-        self.install_tools_button.setVisible(has_brew and (not has_gh or needs_rclone))
+        self.homebrew_button.setVisible(sys.platform == "darwin" and not has_brew)
+        self.install_tools_button.setVisible(not has_gh or not has_command("git") or needs_rclone)
         self.sign_in_button.setVisible(has_gh)
 
     def run_preflight_checks(self) -> None:
@@ -281,7 +289,7 @@ class MainWindow(QMainWindow):
         missing_tools = [tool for tool in ["git", "gh"] if not has_command(tool)]
         if self.config.destination_mode in {"google_drive", "both"} and not has_command("rclone"):
             missing_tools.append("rclone")
-        if missing_tools and has_command("brew"):
+        if missing_tools and has_command(package_manager()):
             answer = QMessageBox.question(
                 self,
                 "Preflight Setup",
@@ -294,7 +302,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(
                 self,
                 "Preflight Setup",
-                "GithubSnapshot needs Homebrew before it can install GitHub tools. Use Install Homebrew, then reopen the app.",
+                "Click Install Required Tools to set up missing dependencies. On macOS, install Homebrew first if prompted. On Windows, winget requires Microsoft's App Installer.",
             )
             return
         try:
@@ -319,14 +327,16 @@ class MainWindow(QMainWindow):
             answer = QMessageBox.question(
                 self,
                 "Missed Backup",
-                "The scheduled backup was missed while this Mac was off, asleep, or unavailable. Run it now?",
+                "The scheduled backup was missed while this computer was off, asleep, or unavailable. Run it now?",
             )
             if answer == QMessageBox.StandardButton.Yes:
                 self.start_backup()
 
     def _open_terminal_command(self, command: str) -> None:
-        escaped = command.replace("\\", "\\\\").replace('"', '\\"')
-        subprocess.Popen(["osascript", "-e", f'tell application "Terminal" to do script "{escaped}"'])
+        try:
+            open_terminal(command)
+        except Exception as exc:
+            QMessageBox.warning(self, "Unable To Open Setup", str(exc))
 
     def connect_google_drive(self) -> None:
         if not has_command("rclone"):
@@ -382,7 +392,8 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Repository List", str(exc))
 
     def start_backup(self) -> None:
-        self.save_settings()
+        if self.save_settings() is False:
+            return
         self.cancel_requested = False
         self.backup_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
@@ -432,7 +443,7 @@ class MainWindow(QMainWindow):
 
     def open_backup_folder(self) -> None:
         if self.config.backup_destination:
-            subprocess.run(["open", self.config.backup_destination], check=False)
+            QDesktopServices.openUrl(QUrl.fromLocalFile(self.config.backup_destination))
 
     def toggle_log(self) -> None:
         self.log_view.setVisible(not self.log_view.isVisible())

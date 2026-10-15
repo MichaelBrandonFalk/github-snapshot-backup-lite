@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -10,14 +12,26 @@ BUNDLE_ID = "com.githubsnapshotbackup.weekly"
 
 
 def app_support_dir() -> Path:
+    if sys.platform == "win32":
+        return Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming")) / APP_NAME
+    if sys.platform != "darwin":
+        return Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "github-snapshot-backup"
     return Path.home() / "Library" / "Application Support" / APP_NAME
 
 
 def cache_dir() -> Path:
+    if sys.platform == "win32":
+        return Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / APP_NAME / "Cache"
+    if sys.platform != "darwin":
+        return Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "github-snapshot-backup"
     return Path.home() / "Library" / "Caches" / APP_NAME
 
 
 def logs_dir() -> Path:
+    if sys.platform == "win32":
+        return cache_dir().parent / "Logs"
+    if sys.platform != "darwin":
+        return Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state")) / "github-snapshot-backup" / "logs"
     return Path.home() / "Library" / "Logs" / APP_NAME
 
 

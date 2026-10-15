@@ -4,17 +4,26 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 COMMAND_PATHS = [
+    str(Path.home() / ".local" / "bin"),
     "/opt/homebrew/bin",
     "/usr/local/bin",
     "/usr/bin",
     "/bin",
     "/opt/local/bin",
 ]
+if sys.platform == "win32":
+    COMMAND_PATHS = [
+        str(Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Git" / "cmd"),
+        str(Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "GitHub CLI"),
+        str(Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "WinGet" / "Links"),
+        str(Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "WindowsApps"),
+    ]
 
 
 @dataclass(slots=True)
@@ -38,16 +47,18 @@ def command_path(command: str) -> str | None:
     if found:
         return found
     for folder in COMMAND_PATHS:
-        candidate = Path(folder) / command
-        if candidate.exists() and os.access(candidate, os.X_OK):
-            return str(candidate)
+        names = [command, command + ".exe"] if sys.platform == "win32" else [command]
+        for name in names:
+            candidate = Path(folder) / name
+            if candidate.is_file() and os.access(candidate, os.X_OK):
+                return str(candidate)
     return None
 
 
 def command_env() -> dict[str, str]:
     env = os.environ.copy()
     existing = env.get("PATH", "")
-    env["PATH"] = ":".join([*COMMAND_PATHS, existing])
+    env["PATH"] = os.pathsep.join([*COMMAND_PATHS, existing])
     return env
 
 

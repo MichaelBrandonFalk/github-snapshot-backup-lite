@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 from .github import command_env, command_path, has_command
+from .platform_support import shell_command
 
 DEFAULT_REMOTE = "GithubSnapshotDrive"
 DEFAULT_REMOTE_PATH = "GithubSnapshot Backups"
@@ -30,7 +31,7 @@ def remote_exists(remote: str) -> bool:
 
 def configure_remote_command(remote: str) -> str:
     rclone = command_path("rclone") or "rclone"
-    return f'{rclone} config create "{remote}" drive scope drive.file config_is_local true'
+    return shell_command([rclone, "config", "create", remote, "drive", "scope", "drive.file", "config_is_local", "true"])
 
 
 def upload_snapshot(snapshot_dir: Path, latest_json: Path, remote: str, remote_path: str) -> None:

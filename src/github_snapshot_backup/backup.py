@@ -15,6 +15,7 @@ from .google_drive import apply_retention as apply_drive_retention
 from .google_drive import remote_exists, remove_tree, upload_snapshot
 from .github import Repository, branch_commit_sha, choose_branch, github_username, has_command, list_repositories
 from .github import command_env, command_path
+from .platform_support import remove_readonly_file
 
 
 @dataclass(slots=True)
@@ -113,8 +114,7 @@ class BackupRunner:
         if self.config.destination_mode in {"google_drive", "both"} and not has_command("rclone"):
             missing.append("rclone")
         if missing:
-            hints = {"git": "brew install git", "gh": "brew install gh", "rclone": "brew install rclone"}
-            raise RuntimeError("Missing required tool(s): " + ", ".join(f"{m} ({hints[m]})" for m in missing))
+            raise RuntimeError("Missing required tools: " + ", ".join(missing) + ". Open the app and click Install Required Tools.")
         if self.config.destination_mode in {"google_drive", "both"} and not remote_exists(self.config.google_drive_remote):
             raise RuntimeError("Google Drive is selected but not connected. Click Connect Google Drive before running a backup.")
         if not has_command("git-lfs"):
@@ -142,7 +142,7 @@ class BackupRunner:
                 self._clone(repo.url, branch, clone_path)
                 git_dir = clone_path / ".git"
                 if git_dir.exists():
-                    shutil.rmtree(git_dir)
+                    shutil.rmtree(git_dir, onerror=remove_readonly_file)
                 self._progress_repo(repo.name, "Creating ZIP")
                 create_zip_from_folder(clone_path, archive_path)
             verify_zip(archive_path)
