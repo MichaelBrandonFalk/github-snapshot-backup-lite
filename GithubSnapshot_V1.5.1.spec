@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='GithubSnapshot_V1.5',
+    name='GithubSnapshot_V1.5.1',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -40,11 +40,11 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='GithubSnapshot_V1.5',
+    name='GithubSnapshot_V1.5.1',
 )
 app = BUNDLE(
     coll,
-    name='GithubSnapshot_V1.5.app',
+    name='GithubSnapshot_V1.5.1.app',
     icon=None,
     bundle_identifier=None,
 )

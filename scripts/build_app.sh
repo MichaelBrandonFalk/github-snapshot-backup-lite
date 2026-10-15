@@ -19,7 +19,7 @@ for line in text.splitlines():
         break
 PY
 )"
-APP_VERSION="V${VERSION%.*}"
+APP_VERSION="V${VERSION%.0}"
 APP_NAME="GithubSnapshot_${APP_VERSION}"
 
 "$PYTHON" -m pip install --no-build-isolation -e ".[build]"

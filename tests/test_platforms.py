@@ -2,6 +2,10 @@ import os
 from pathlib import Path
 from types import SimpleNamespace
 import xml.etree.ElementTree as ET
+import sys
+import subprocess
+import pytest
+import uuid
 
 from github_snapshot_backup import config, github, platform_support, scheduler
 
@@ -91,3 +95,28 @@ def test_schedule_failure_is_reported(monkeypatch):
     monkeypatch.setattr(scheduler.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(returncode=1, stderr="Access denied", stdout=""))
     with pytest.raises(RuntimeError, match="Access denied"):
         scheduler._checked(["schtasks"])
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Requires native Windows PowerShell")
+def test_native_windows_command_with_spaces(tmp_path):
+    script = tmp_path / "path with spaces.py"
+    script.write_text("import sys; print(sys.argv[1])", encoding="utf-8")
+    command = platform_support.shell_command([sys.executable, str(script), "value with spaces & apostrophe's"])
+    result = subprocess.run(["powershell.exe", "-NoProfile", "-Command", command], capture_output=True, text=True, check=True)
+    assert result.stdout.strip() == "value with spaces & apostrophe's"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Requires native Windows Task Scheduler")
+def test_native_windows_schedule_roundtrip(monkeypatch, tmp_path):
+    from datetime import datetime
+    monkeypatch.setattr(scheduler, "TASK_NAME", "GithubSnapshot CI " + uuid.uuid4().hex)
+    monkeypatch.setattr(scheduler, "app_support_dir", lambda: tmp_path)
+    monkeypatch.setattr(scheduler, "logs_dir", lambda: tmp_path / "logs")
+    tomorrow = (datetime.now().weekday() + 1) % 7
+    try:
+        scheduler.install_schedule(config.AppConfig(weekday=tomorrow))
+        result = subprocess.run(["schtasks", "/Query", "/TN", scheduler.TASK_NAME, "/XML"], capture_output=True, text=True, check=True)
+        assert "--headless-backup" in result.stdout
+        assert "StartWhenAvailable" in result.stdout
+    finally:
+        scheduler.uninstall_schedule()

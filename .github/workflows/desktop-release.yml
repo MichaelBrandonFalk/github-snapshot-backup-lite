@@ -44,15 +44,15 @@ jobs:
       - name: Linux packaged GUI and CLI smoke checks
         if: runner.os == 'Linux'
         run: |
-          dist/GithubSnapshot_V1.5/GithubSnapshot_V1.5 --help
-          xvfb-run -a dist/GithubSnapshot_V1.5/GithubSnapshot_V1.5 --smoke-test
+          dist/GithubSnapshot_V1.5.1/GithubSnapshot_V1.5.1 --help
+          xvfb-run -a dist/GithubSnapshot_V1.5.1/GithubSnapshot_V1.5.1 --smoke-test
           sudo apt-get install -y ./downloads/*.deb
-          xvfb-run -a /opt/GithubSnapshot_V1.5/GithubSnapshot_V1.5 --smoke-test
+          xvfb-run -a /opt/GithubSnapshot_V1.5.1/GithubSnapshot_V1.5.1 --smoke-test
       - name: Windows packaged GUI smoke check
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $app = Resolve-Path dist/GithubSnapshot_V1.5/GithubSnapshot_V1.5.exe
+          $app = Resolve-Path dist/GithubSnapshot_V1.5.1/GithubSnapshot_V1.5.exe
           $process = Start-Process -FilePath $app -ArgumentList '--smoke-test' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Packaged GUI smoke check failed: $($process.ExitCode)" }
       - name: Publish native assets and checksums

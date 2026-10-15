@@ -1,6 +1,6 @@
-# GithubSnapshot V1.5
+# GithubSnapshot V1.5.1
 
-GithubSnapshot V1.5 is a desktop utility for macOS, Windows, and Linux Mint that keeps weekly point-in-time ZIP snapshots of repositories owned by the authenticated GitHub account.
+GithubSnapshot V1.5.1 is a desktop utility for macOS, Windows, and Linux Mint that keeps weekly point-in-time ZIP snapshots of repositories owned by the authenticated GitHub account.
 
 It is intentionally not a full GitHub archive. It backs up the current files from `main`, or the repository default branch when `main` does not exist. It does not preserve issues, pull requests, Actions history, every branch, tags, or full Git history.
 
@@ -8,9 +8,9 @@ The [download page](https://michaelbrandonfalk.github.io/github-snapshot-backup-
 
 ## Downloads And Installation
 
-- [Windows 10/11 x64 ZIP](https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.0/GithubSnapshot_V1.5_Windows_x64.zip): extract the entire ZIP to a permanent folder, then open `GithubSnapshot_V1.5.exe`. Use Install Required Tools for Git, GitHub CLI, and rclone through winget. If winget is missing, install Microsoft's App Installer. Reopen the app after tools are installed.
-- [Linux Mint 21/22 amd64 installer](https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.0/GithubSnapshot_V1.5_LinuxMint_amd64.deb): open with Package Installer, or run `sudo apt install ./GithubSnapshot_V1.5_LinuxMint_amd64.deb`. Dependencies are installed through apt. Launch from the applications menu.
-- [macOS Apple Silicon ZIP](https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.0/GithubSnapshot_V1.5_macOS.zip): extract and move the app to Applications. Use the setup buttons if prompted.
+- [Windows 10/11 x64 ZIP](https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.1/GithubSnapshot_V1.5.1_Windows_x64.zip): extract the entire ZIP to a permanent folder, then open `GithubSnapshot_V1.5.exe`. Use Install Required Tools for Git, GitHub CLI, and rclone through winget. If winget is missing, install Microsoft's App Installer. Reopen the app after tools are installed.
+- [Linux Mint 21/22 amd64 installer](https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.1/GithubSnapshot_V1.5.1_LinuxMint_amd64.deb): open with Package Installer, or run `sudo apt install ./GithubSnapshot_V1.5.1_LinuxMint_amd64.deb`. Dependencies are installed through apt. Launch from the applications menu.
+- [macOS Apple Silicon ZIP](https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.1/GithubSnapshot_V1.5.1_macOS.zip): extract and move the app to Applications. Use the setup buttons if prompted.
 
 Windows builds are unsigned; macOS builds are not notarized. Linux Mint builds target x86-64 Mint 21 and 22 (Ubuntu 22.04/24.04 bases), not ARM devices or LMDE. Windows and Linux packages are built on native GitHub Actions runners and checked for GUI startup. A full Mint desktop backup and Google OAuth flow still require a real signed-in user session.
 
@@ -109,7 +109,7 @@ The build creates:
 
 ```text
 dist/GithubSnapshot_V1.5.app
-downloads/GithubSnapshot_V1.5_macOS.zip
+downloads/GithubSnapshot_V1.5.1_macOS.zip
 ```
 
 ## Build Windows And Linux Mint Packages
@@ -135,7 +135,7 @@ The saved schedule uses a macOS LaunchAgent, a Windows Task Scheduler task named
 The LaunchAgent runs:
 
 ```text
-GithubSnapshot_V1.5.app/Contents/MacOS/GithubSnapshot_V1.5 --headless-backup
+GithubSnapshot_V1.5.app/Contents/MacOS/GithubSnapshot_V1.5.1 --headless-backup
 ```
 
 After upgrading or moving the app, open the new version and save settings to update the scheduled executable. Settings and logs live in the user's macOS Library, Windows AppData, or Linux XDG directories.

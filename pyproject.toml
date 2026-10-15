@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "github-snapshot-backup-lite"
-version = "1.5.0"
+version = "1.5.1"
 description = "Desktop utility for weekly GitHub repository snapshot backups on macOS, Windows, and Linux."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -14,7 +14,7 @@ dependencies = [
 
 [project.optional-dependencies]
 build = ["pyinstaller>=6.0"]
-test = ["pytest>=8.0"]
+test = ["pytest>=8.0", "tzdata"]
 
 [project.scripts]
 github-snapshot-backup = "github_snapshot_backup.app:main"

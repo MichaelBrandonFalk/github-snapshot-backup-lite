@@ -18,7 +18,7 @@ def remove_readonly_file(function, path, exc_info) -> None:
 
 def shell_command(args: list[str]) -> str:
     if sys.platform == "win32":
-        return subprocess.list2cmdline(args)
+        return "& " + " ".join("'" + arg.replace("'", "''") + "'" for arg in args)
     return shlex.join(args)
 
 
@@ -28,7 +28,7 @@ def package_manager() -> str:
 
 def install_tools_command() -> str:
     if sys.platform == "win32":
-        return " & ".join(
+        return "; ".join(
             f"winget install --exact --id {package} --accept-package-agreements --accept-source-agreements"
             for package in ["Git.Git", "GitHub.cli", "Rclone.Rclone"]
         )
@@ -42,7 +42,7 @@ def open_terminal(command: str) -> None:
         escaped = command.replace("\\", "\\\\").replace('"', '\\"')
         subprocess.Popen(["osascript", "-e", f'tell application "Terminal" to do script "{escaped}"'])
     elif sys.platform == "win32":
-        subprocess.Popen(["cmd.exe", "/k", command], creationflags=subprocess.CREATE_NEW_CONSOLE, env=command_env())
+        subprocess.Popen(["powershell.exe", "-NoProfile", "-NoExit", "-Command", command], creationflags=subprocess.CREATE_NEW_CONSOLE, env=command_env())
     else:
         # Mint's default terminal supports -e with an argument vector.
         terminal = next((command_path(name) for name in ["x-terminal-emulator", "gnome-terminal", "xterm"] if has_command(name)), None)
