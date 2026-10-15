@@ -41,21 +41,24 @@ jobs:
         run: python -m pytest -q
       - name: Build native distribution
         run: python scripts/build_desktop.py
+      - name: Read versioned executable name
+        shell: bash
+        run: python -c "from github_snapshot_backup import __version__; print('APP_NAME=GithubSnapshot_V' + __version__.removesuffix('.0'))" >> "$GITHUB_ENV"
       - name: Linux packaged GUI and CLI smoke checks
         if: runner.os == 'Linux'
         env:
           QT_DEBUG_PLUGINS: '1'
         run: |
-          ldd dist/GithubSnapshot_V1.5.2/_internal/PySide6/Qt/plugins/platforms/libqxcb.so || true
-          dist/GithubSnapshot_V1.5.2/GithubSnapshot_V1.5.2 --help
-          xvfb-run -a dist/GithubSnapshot_V1.5.2/GithubSnapshot_V1.5.2 --smoke-test
+          ldd "dist/$APP_NAME/_internal/PySide6/Qt/plugins/platforms/libqxcb.so"
+          "dist/$APP_NAME/$APP_NAME" --help
+          xvfb-run -a "dist/$APP_NAME/$APP_NAME" --smoke-test
           sudo apt-get install -y ./downloads/*.deb
-          xvfb-run -a /opt/GithubSnapshot_V1.5.2/GithubSnapshot_V1.5.2 --smoke-test
+          xvfb-run -a "/opt/$APP_NAME/$APP_NAME" --smoke-test
       - name: Windows packaged GUI smoke check
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $app = Resolve-Path dist/GithubSnapshot_V1.5.2/GithubSnapshot_V1.5.2.exe
+          $app = Resolve-Path "dist/$env:APP_NAME/$env:APP_NAME.exe"
           $process = Start-Process -FilePath $app -ArgumentList '--smoke-test' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Packaged GUI smoke check failed: $($process.ExitCode)" }
       - name: Publish native assets and checksums
