@@ -51,7 +51,7 @@ def main() -> None:
             "Maintainer: MichaelBrandonFalk <noreply@github.com>\nSection: utils\nPriority: optional\n"
             "Depends: git, gh, git-lfs, rclone, xterm, libgl1, libegl1, libopengl0, libdbus-1-3, "
             "libxcb-cursor0, libxkbcommon-x11-0, libxcb-icccm4, libxcb-image0, libxcb-keysyms1, "
-            "libxcb-render-util0, libxcb-xinerama0, libxcb-xkb1\n"
+            "libxcb-render-util0, libxcb-xinerama0, libxcb-xkb1, libxcb-shape0\n"
             "Description: Weekly GitHub repository snapshot backups\n"
             " Desktop app with local and Google Drive destinations. Python is included.\n",
             encoding="utf-8",

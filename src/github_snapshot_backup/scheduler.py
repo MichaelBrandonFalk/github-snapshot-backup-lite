@@ -111,7 +111,7 @@ def uninstall_schedule() -> None:
 
 
 def executable_for_launchd() -> str:
-    bundle_executable = Path("/Applications/GithubSnapshot_V1.5.app/Contents/MacOS/GithubSnapshot_V1.5.1")
+    bundle_executable = Path("/Applications/GithubSnapshot_V1.5.app/Contents/MacOS/GithubSnapshot_V1.5.2")
     if bundle_executable.exists():
         return str(bundle_executable)
     return "github-snapshot-backup"

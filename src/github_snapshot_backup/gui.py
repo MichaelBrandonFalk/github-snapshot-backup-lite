@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
         self.cancel_requested = False
         self.preflight_prompted = False
         self.drive_warning_shown = False
-        self.setWindowTitle("GithubSnapshot V1.5.1")
+        self.setWindowTitle("GithubSnapshot V1.5.2")
         self.resize(640, 760)
         self._build_ui()
         self._connect_signals()
@@ -61,7 +61,7 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         root = QWidget()
         layout = QVBoxLayout(root)
-        title = QLabel("GithubSnapshot V1.5.1")
+        title = QLabel("GithubSnapshot V1.5.2")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
         layout.addWidget(title)
 

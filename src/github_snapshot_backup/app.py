@@ -25,7 +25,7 @@ def run_headless() -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="GithubSnapshot V1.5.1")
+    parser = argparse.ArgumentParser(description="GithubSnapshot V1.5.2")
     parser.add_argument("--headless-backup", action="store_true", help="Run a backup using saved preferences and exit.")
     parser.add_argument("--smoke-test", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
