@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GithubSnapshot V1.4</title>
+    <title>GithubSnapshot V1.5.2</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="topbar">
       <div class="brand">
-        <span>GithubSnapshot V1.4</span>
+        <span>GithubSnapshot V1.5.2</span>
       </div>
       <nav aria-label="Page sections">
         <a href="#setup">Setup</a>
@@ -21,26 +21,35 @@
       <section class="hero">
         <div>
           <div class="section-heading">
-            <h1>GithubSnapshot V1.4</h1>
-            <p>A small macOS app that backs up current repository files on a weekly schedule, then lets you change the folder, schedule, retention, or repository list later.</p>
+            <h1>GithubSnapshot V1.5.2</h1>
+            <p>Weekly GitHub repository snapshots for macOS, Windows, and Linux Mint. Save locally, upload to Google Drive, or do both.</p>
           </div>
           <div class="link-row">
-            <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.4.0/GithubSnapshot_V1.4_macOS.zip" download>Download App</a>
+            <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.2/GithubSnapshot_V1.5.2_macOS.zip" download>Download for macOS</a>
+            <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.2/GithubSnapshot_V1.5.2_Windows_x64.zip" download>Download for Windows</a>
+            <a class="download-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/download/v1.5.2/GithubSnapshot_V1.5.2_LinuxMint_amd64.deb" download>Download for Linux Mint</a>
             <a class="secondary-link" href="https://github.com/MichaelBrandonFalk/github-snapshot-backup-lite/releases/latest">View on GitHub</a>
           </div>
+          <p class="platform-note">macOS: Apple Silicon. Windows: 10/11, 64-bit Intel/AMD. Linux Mint: 21/22, 64-bit Intel/AMD. Python is included.</p>
         </div>
       </section>
 
       <section id="setup" class="content-band">
         <h2>How To Run It</h2>
+        <h3>macOS</h3>
+        <p>Unzip the download, move <code>GithubSnapshot_V1.5.2.app</code> to Applications, then open it. If macOS blocks the first launch, right-click the app and choose Open. Use Install Homebrew if needed, then Install Required Tools.</p>
+        <h3>Windows</h3>
+        <p>Extract the entire ZIP to a permanent folder and open <code>GithubSnapshot_V1.5.2.exe</code> inside it. Keep the accompanying files together. Click Install Required Tools if prompted; this uses Windows Package Manager and may request administrator approval. If winget is unavailable, install <a href="https://apps.microsoft.com/detail/9nblggh4nns1">App Installer from Microsoft</a>. Reopen the app after installing tools.</p>
+        <h3>Linux Mint</h3>
+        <p>Open the <code>.deb</code> download with Package Installer and choose Install Package. The installer includes the app and installs its dependencies through the system package manager. Open GithubSnapshot from the applications menu. Internet access and your administrator password are needed during installation.</p>
+        <p>If your package installer cannot resolve dependencies, install from Terminal:</p>
+        <pre><code>sudo apt install ./GithubSnapshot_V1.5.2_LinuxMint_amd64.deb</code></pre>
+        <h3>Save Your Settings</h3>
         <ol>
-          <li>Download the app ZIP.</li>
-          <li>Unzip it and open `GithubSnapshot_V1.4.app`.</li>
-          <li>If macOS blocks the first launch, right-click the app and choose Open.</li>
-          <li>If Homebrew is missing, use the app's Install Homebrew button. It opens the official Homebrew instructions.</li>
-          <li>Use the app buttons to install GitHub tools and sign in if prompted.</li>
+          <li>Sign in to GitHub using the app's Sign In To GitHub button.</li>
           <li>Choose a backup destination, leave repository mode on all for set-and-forget backups, and keep Weekly enabled.</li>
-          <li>The default schedule is Wednesday at 10:00 AM. Set it for a time when the Mac is usually awake and online.</li>
+          <li>The default schedule is Wednesday at 10:00 AM in your computer's local time. Choose a time when the computer is usually awake, signed in, and online.</li>
+          <li>Click Save Settings. Keep the app installed in the same location; its window can be closed.</li>
           <li>Reopen the app later to change the folder, schedule, retention, or repository list.</li>
         </ol>
       </section>
@@ -52,11 +61,11 @@
         </article>
         <article>
           <h2>Missed Schedule</h2>
-          <p>Pick a time when the Mac is normally on. If a scheduled backup is missed because the Mac was off or unavailable, the app checks for that on the next launch and offers to run the backup immediately.</p>
+          <p>Pick a time when the computer is normally on and signed in. Windows Task Scheduler and Linux Mint's user timer catch up missed schedules when available. On macOS, launchd can catch up after sleep. The app also checks for missed backups when reopened.</p>
         </article>
         <article>
           <h2>First Run</h2>
-          <p>A fresh Mac may need Homebrew before the app can install `git`, `gh`, and `git-lfs`. The app opens the official Homebrew page instead of running a shell installer without context.</p>
+          <p>The Windows app offers to install tools using winget. The Linux Mint installer installs required tools as dependencies. On macOS, setup uses Homebrew. Google Drive requires one browser sign-in through Connect Google Drive.</p>
         </article>
         <article>
           <h2>Repository Mode</h2>

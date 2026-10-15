@@ -116,6 +116,20 @@ li {
   margin-top: 12px;
 }
 
+.platform-note {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
 .content-band {
   margin-top: 22px;
   padding: 28px 0;
