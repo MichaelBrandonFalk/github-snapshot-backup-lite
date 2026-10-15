@@ -43,7 +43,10 @@ jobs:
         run: python scripts/build_desktop.py
       - name: Linux packaged GUI and CLI smoke checks
         if: runner.os == 'Linux'
+        env:
+          QT_DEBUG_PLUGINS: '1'
         run: |
+          ldd dist/GithubSnapshot_V1.5.1/_internal/PySide6/Qt/plugins/platforms/libqxcb.so || true
           dist/GithubSnapshot_V1.5.1/GithubSnapshot_V1.5.1 --help
           xvfb-run -a dist/GithubSnapshot_V1.5.1/GithubSnapshot_V1.5.1 --smoke-test
           sudo apt-get install -y ./downloads/*.deb
